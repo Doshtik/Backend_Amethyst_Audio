@@ -61,11 +61,6 @@ namespace Backend_Amethyst_Audio.Data
 
         public virtual DbSet<UsersSub> UsersSubs { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseNpgsql("Host=localhost;Database=amethyst_audio_db;Username=postgres;Password=1111");
-        }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Album>(entity =>
