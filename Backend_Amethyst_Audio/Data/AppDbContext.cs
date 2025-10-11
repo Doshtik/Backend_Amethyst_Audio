@@ -530,6 +530,12 @@ namespace Backend_Amethyst_Audio.Data
                 entity.Property(e => e.Firstname).HasColumnName("firstname");
                 entity.Property(e => e.Gender).HasColumnName("gender");
                 entity.Property(e => e.HeaderName).HasColumnName("header_name");
+                entity.Property(e => e.IsVerified)
+                    .HasDefaultValue(false)
+                    .HasColumnName("is_verified");
+                entity.Property(e => e.IsEmailVerified)
+                    .HasDefaultValue(false)
+                    .HasColumnName("is_email_verified");
                 entity.Property(e => e.IsActive)
                     .HasDefaultValue(false)
                     .HasColumnName("is_active");
