@@ -1,0 +1,15 @@
+using Backend_Amethyst_Audio.Models;
+
+namespace Backend_Amethyst_Audio.Abstractions;
+
+public interface IEmployeeService
+{
+    Task<Employee> GetByIdAsync(long id);
+    Task<List<Employee>> GetAllAsync();
+    
+    Task CreateAsync(Employee employee);
+    Task UpdateAsync(Employee employee);
+    Task DeleteAsync(long idEmployee);
+
+    Task<Employee> GetEmployeeByEmail(string email, string password);
+}

@@ -20,6 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Middlewares\" />
       <Folder Include="Services\" />
       <Folder Include="Controllers\" />
     </ItemGroup>
