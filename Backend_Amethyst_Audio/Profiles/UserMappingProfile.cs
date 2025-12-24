@@ -4,9 +4,9 @@ using Backend_Amethyst_Audio.Models;
 
 namespace Backend_Amethyst_Audio.Profiles;
 
-public class MappingProfile : Profile
+public class UserMappingProfile : Profile
 {
-    public MappingProfile()
+    public UserMappingProfile()
     {
         CreateMap<UserCreateDTO, User>();
         CreateMap<User, UserReadDTO>();
