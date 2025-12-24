@@ -24,9 +24,9 @@ public partial class User
     public string? AvatarName { get; set; }
 
     public string? HeaderName { get; set; }
-    
+
     public bool IsVerified { get; set; }
-    
+
     public bool IsEmailVerified { get; set; }
 
     public bool IsActive { get; set; }

@@ -7,19 +7,19 @@ public partial class Track
 {
     public long Id { get; set; }
 
+    public short? IdPace { get; set; }
+
+    public short? IdMood { get; set; }
+
     public string Name { get; set; } = null!;
 
-    public bool? Textless { get; set; }
+    public bool? IsTextless { get; set; }
 
-    public bool ExplicitContent { get; set; }
+    public bool IsExplicit { get; set; }
 
     public string CoverName { get; set; } = null!;
 
     public string? Country { get; set; }
-
-    public string? TrackPace { get; set; }
-
-    public string? TrackMood { get; set; }
 
     public string TrackName { get; set; } = null!;
 
@@ -34,6 +34,10 @@ public partial class Track
     public DateTime UpdatedAt { get; set; }
 
     public virtual ICollection<AlbumsTrack> AlbumsTracks { get; set; } = new List<AlbumsTrack>();
+
+    public virtual Mood? IdMoodNavigation { get; set; }
+
+    public virtual Pace? IdPaceNavigation { get; set; }
 
     public virtual ICollection<PlaylistsTrack> PlaylistsTracks { get; set; } = new List<PlaylistsTrack>();
 

@@ -11,6 +11,8 @@ public partial class AlbumsTrack
 
     public long IdTrack { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
     public virtual Album IdAlbumNavigation { get; set; } = null!;
 
     public virtual Track IdTrackNavigation { get; set; } = null!;

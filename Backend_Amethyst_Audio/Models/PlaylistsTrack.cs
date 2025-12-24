@@ -11,6 +11,8 @@ public partial class PlaylistsTrack
 
     public long IdTrack { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
     public virtual Playlist IdPlaylistNavigation { get; set; } = null!;
 
     public virtual Track IdTrackNavigation { get; set; } = null!;
