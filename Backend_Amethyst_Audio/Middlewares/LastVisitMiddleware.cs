@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Backend_Amethyst_Audio.Data;
+using Backend_Amethyst_Audio.Models.Data;
 
 namespace Backend_Amethyst_Audio.Middlewares;
 
