@@ -7,35 +7,52 @@ namespace Backend_Amethyst_Audio.Controllers;
 [Route("api/{controller}")]
 public class MediaController : ControllerBase
 {
-    [HttpGet("/tracks/{filePath}")]
-    public async Task<IActionResult> GetTrackFile(string filePath)
+    private IMediaSevice _service;
+    public MediaController(IMediaSevice service)
     {
-        if (!System.IO.File.Exists(filePath)) 
-            return NotFound(); 
+        _service = service;
+    }
+    
+    [HttpGet("/tracks/{id}")]
+    public async Task<IActionResult> GetTrackFileAsync(int id)
+    {
+
+        string filePath = await _service.GetTrackFilePathAsync(id); 
         return PhysicalFile(filePath, "audio/mpeg", enableRangeProcessing: true);
     }
 
-    [HttpGet("/covers/{filePath}")]
-    public async Task<IActionResult> GetContentCover(string filePath)
+    [HttpGet("/tracks/covers/{id}")]
+    public async Task<IActionResult> GetTrackCoverAsync(int id)
     {
-        if (!System.IO.File.Exists(filePath))
-            return NotFound();
+        string filePath = await _service.GetTrackCoverPathAsync(id);
         return PhysicalFile(filePath, "image/jpeg");
     }
 
-    [HttpGet("/avatars/{filePath}")]
-    public async Task<IActionResult> GetUserAvatar(string filePath)
+    [HttpGet("/playlists/covers/{id}")]
+    public async Task<IActionResult> GetPlaylistCoverAsync(int id)
     {
-        if (!System.IO.File.Exists(filePath))
-            return NotFound();
+        string filePath = await _service.GetPlaylistCoverPathAsync(id);
         return PhysicalFile(filePath, "image/jpeg");
     }
 
-    [HttpGet("/headers/{filePath}")]
-    public async Task<IActionResult> GetUserHeader(string filePath)
+    [HttpGet("/albums/covers/{id}")]
+    public async Task<IActionResult> GetAlbumCoverAsync(int id)
     {
-        if (!System.IO.File.Exists(filePath))
-            return NotFound();
+        string filePath = await _service.GetAlbumCoverPathAsync(id);
+        return PhysicalFile(filePath, "image/jpeg");
+    }
+
+    [HttpGet("/users/avatars/{id}")]
+    public async Task<IActionResult> GetUserAvatarAsync(int id)
+    {
+        string filePath = await _service.GetUserAvatarPathAsync(id);
+        return PhysicalFile(filePath, "image/jpeg");
+    }
+
+    [HttpGet("/users/headers/{id}")]
+    public async Task<IActionResult> GetUserHeaderAsync(int id)
+    {
+        string filePath = await _service.GetUserHeaderPathAsync(id);
         return PhysicalFile(filePath, "image/jpeg");
     }
     

@@ -10,12 +10,12 @@ public interface ITrackService
     Task<TrackInfoDto> GetByIdAsync(long id);
     Task<List<TrackInfoDto>> GetAllAsync();
     
-    Task CreateAsync(CreateTrackDto dto);
-    Task UpdateAsync(ChangeTrackInfoDto dto);
+    Task<TrackInfoDto> CreateAsync(CreateTrackDto dto);
+    Task<TrackInfoDto> UpdateAsync(ChangeTrackInfoDto dto);
     Task DeleteAsync(long id);
     
     Task<List<TrackInfoDto>> GetListByGenreAsync(string genre);
-    Task<List<TrackInfoDto>> GetListBySearchAsync(string search);
+    Task<List<TrackInfoDto>> GetListByTrackNameAsync(string trackName);
     Task<List<TrackInfoDto>> GetListByUserIdAsync(long userId);
     
     Task<List<TrackInfoDto>> GetListOfNewestAsync();
@@ -23,9 +23,8 @@ public interface ITrackService
     Task<List<TrackInfoDto>> GetListOfPersonalizedAsync(PageMyRecordPersonalizedDto dto);
     Task<PageMyRecordDto> PageMyRecordAsync();
     
-    Task<bool> IsLikedAsync(long idUser);
+    Task<bool> IsLikedAsync(long idUser,  long idTrack);
     
     Task AddInPlaylistAsync(long idUser, long idPlaylist);
     Task RemoveFromPlaylistAsync(long idUser, long idPlaylist);
-    IActionResult GetImageByName(string name);
 }

@@ -14,10 +14,10 @@ public interface IUserService
     Task DeleteAsync(long id);
     
     Task<UserInfoDto> GetByNicknameAsync(string nickname);
-    Task<UserInfoDto> GetBySearchAsync(string search);
     
     Task<int> GetListenersAmountAsync(long id);
     
     Task FollowAsync(FollowUserDto dto);
     Task UnfollowAsync(FollowUserDto dto);
+    Task<UserInfoDto> GetLoginAsync(LoginDto dto);
 }

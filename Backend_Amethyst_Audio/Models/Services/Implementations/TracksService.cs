@@ -1,64 +1,93 @@
+using AutoMapper;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.DTO.Pages;
 using Backend_Amethyst_Audio.Models.Data;
+using Backend_Amethyst_Audio.Models.Entities;
+using Backend_Amethyst_Audio.Profiles;
 using Backend_Amethyst_Audio.Services.Abstractions;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend_Amethyst_Audio.Services.Implementations;
 
-public class TracksService(AppDbContext db) : ITrackService
+public class TracksService(AppDbContext db, IMapper mapper) : ITrackService
 {
+    private readonly string _baseUrl;
     private IMediaSevice _mediaSevice;
     
-    public Task<TrackInfoDto> GetByIdAsync(long id)
+    public async Task<TrackInfoDto> GetByIdAsync(long id)
     {
-        throw new NotImplementedException();
+        Track track = await db.Tracks.FindAsync(id);
+        return mapper.Map<TrackInfoDto>(track);
     }
 
-    public Task<List<TrackInfoDto>> GetAllAsync()
+    public async Task<List<TrackInfoDto>> GetAllAsync()
     {
-        throw new NotImplementedException();
+        List<Track> tracks = await db.Tracks.ToListAsync();
+        return mapper.Map<List<TrackInfoDto>>(tracks);
     }
 
-    public Task CreateAsync(CreateTrackDto dto)
+    public async Task<TrackInfoDto> CreateAsync(CreateTrackDto dto)
     {
-        throw new NotImplementedException();
+        Track track = mapper.Map<Track>(dto);
+        await db.Tracks.AddAsync(track);
+        await db.SaveChangesAsync();
+        track.Id = track.Id; // TODO: Проверить способ на достоверность
+        return mapper.Map<TrackInfoDto>(track);
     }
 
-    public Task UpdateAsync(ChangeTrackInfoDto dto)
+    public async Task<TrackInfoDto> UpdateAsync(ChangeTrackInfoDto dto)
     {
-        throw new NotImplementedException();
+        Track track = mapper.Map<Track>(dto);
+        db.Tracks.Update(track);
+        await db.SaveChangesAsync();
+        return mapper.Map<TrackInfoDto>(track);
     }
 
-    public Task DeleteAsync(long id)
+    public async Task DeleteAsync(long id)
     {
-        throw new NotImplementedException();
+        Track track = await db.Tracks.FindAsync(id);
+        if  (track == null)
+            throw new KeyNotFoundException();
     }
 
-    public Task<List<TrackInfoDto>> GetListByGenreAsync(string genre)
+    public async Task<List<TrackInfoDto>> GetListByGenreAsync(string genre)
     {
-        throw new NotImplementedException();
+        List<Track> tracks = await db.TracksGenres
+            .Where(x => x.IdGenreNavigation.GenreName == genre)
+            .Select(x => x.IdTrackNavigation)
+            .ToListAsync();
+        return mapper.Map<List<TrackInfoDto>>(tracks);
     }
 
-    public Task<List<TrackInfoDto>> GetListBySearchAsync(string search)
+    public async Task<List<TrackInfoDto>> GetListByTrackNameAsync(string trackName)
     {
-        throw new NotImplementedException();
+        List<Track> tracks = await db.Tracks.Where(x => x.Name == trackName).ToListAsync();
+        return mapper.Map<List<TrackInfoDto>>(tracks);
     }
 
-    public Task<List<TrackInfoDto>> GetListByUserIdAsync(long userId)
+    public async Task<List<TrackInfoDto>> GetListByUserIdAsync(long userId)
     {
-        throw new NotImplementedException();
+        List<Track> tracks = await db.TracksAuthors
+            .Where(x => x.IdAuthor == userId)
+            .Select(x => x.IdTrackNavigation)
+            .ToListAsync();
+        return mapper.Map<List<TrackInfoDto>>(tracks);
     }
 
-    public Task<List<TrackInfoDto>> GetListOfNewestAsync()
+    public async Task<List<TrackInfoDto>> GetListOfNewestAsync()
     {
-        throw new NotImplementedException();
+        DateTime thresholdDate = DateTime.Today.AddDays(-60);
+        List<Track> tracks = await db.Tracks
+            .Where(x => x.CreatedAt >= thresholdDate)
+            .ToListAsync<Track>();
+        return mapper.Map<List<TrackInfoDto>>(tracks);
     }
 
     public async Task<List<TrackInfoDto>> GetListOfLikedAsync(long likedPlaylistId)
     {
-        var likedTracks = await db.PlaylistsTracks
+        List<TrackInfoDto> likedTracks = await db.PlaylistsTracks
             .Where(pt => pt.IdPlaylist == likedPlaylistId)
             .Select(pt => new TrackInfoDto
             {
@@ -66,58 +95,74 @@ public class TracksService(AppDbContext db) : ITrackService
                 Name = pt.IdTrackNavigation.Name,
                 CoverUrl = pt.IdTrackNavigation.CoverFileName,
                 DurationSec = pt.IdTrackNavigation.DurationSec,
-                // Собираем авторов прямо здесь
-                UserList = pt.IdTrackNavigation
-                    .TracksAuthors
-                    .Select(ta => new UserInfoDto
-                    {
-                        Id = ta.IdAuthorNavigation.Id,
-                        Lastname = ta.IdAuthorNavigation.Lastname,
-                        Firstname = ta.IdAuthorNavigation.Firstname,
-                        Nickname = ta.IdAuthorNavigation.Nickname,
-                        Email = ta.IdAuthorNavigation.Email,
-                        AvatarUrl = ta.IdAuthorNavigation.AvatarFileName,
-                        HeaderUrl = ta.IdAuthorNavigation.HeaderFileName,
-                        IsVerified = ta.IdAuthorNavigation.IsVerified,
-                    })
-                    .ToList()
+                UserList = mapper.Map<List<UserInfoDto>>(pt.IdTrackNavigation.TracksAuthors.ToList())
             })
             .ToListAsync();
         return likedTracks;
     }
 
-    public Task<List<TrackInfoDto>> GetListOfPersonalizedAsync(PageMyRecordPersonalizedDto dto)
+    public async Task<List<TrackInfoDto>> GetListOfPersonalizedAsync(PageMyRecordPersonalizedDto dto)
     {
-        throw new NotImplementedException();
+        List<TrackInfoDto> personalized = await db.PlaylistsTracks
+            .Where(pt => 
+                pt.IdTrackNavigation.IdMoodNavigation.MoodName == dto.MoodName ||
+                pt.IdTrackNavigation.IdPaceNavigation.PaceName == dto.PaceName ||
+                pt.IdTrackNavigation.Country == dto.Country)
+            .Select(pt => new TrackInfoDto
+            {
+                Id = pt.IdTrackNavigation.Id,
+                Name = pt.IdTrackNavigation.Name,
+                CoverUrl = pt.IdTrackNavigation.CoverFileName,
+                DurationSec = pt.IdTrackNavigation.DurationSec,
+                UserList = mapper.Map<List<UserInfoDto>>(pt.IdTrackNavigation.TracksAuthors.ToList())
+            })
+            .ToListAsync();
+        return personalized;
     }
 
-    public Task<PageMyRecordDto> PageMyRecordAsync()
+    public async Task<PageMyRecordDto> PageMyRecordAsync()
     {
         PageMyRecordDto dto = new PageMyRecordDto
         {
-            AvailablePaces = db.Paces.Select(x => x.PaceName).ToList(),
-            AvailableMoods = db.Moods.Select(x => x.MoodName).ToList()
+            AvailablePaces = await db.Paces.Select(x => x.PaceName).ToListAsync(),
+            AvailableMoods = await db.Moods.Select(x => x.MoodName).ToListAsync()
         };
-        return Task.FromResult(dto);
+        return dto;
     }
 
-    public Task<bool> IsLikedAsync(long idUser)
+    public async Task<bool> IsLikedAsync(long idUser,  long idTrack)
     {
-        throw new NotImplementedException();
+        Track? track = await db.LibrariesTracks
+            .Where(x => x.IdTrack == idTrack && x.IdLibraryNavigation.IdUser == idUser)
+            .Select(x => x.IdTrackNavigation)
+            .FirstOrDefaultAsync();
+        if (track == null)
+            return false;
+        return true;
     }
 
-    public Task AddInPlaylistAsync(long idUser, long idPlaylist)
+    public async Task AddInPlaylistAsync(long idTrack, long idPlaylist)
     {
-        throw new NotImplementedException();
+        
+        PlaylistsTrack? playlistsTrack = db.PlaylistsTracks
+            .FirstOrDefault(x => x.IdTrack == idTrack && x.IdPlaylist == idPlaylist);
+        if (playlistsTrack != null)
+            throw new Exception("Playlist already exists");
+
+        playlistsTrack = new PlaylistsTrack();
+        playlistsTrack.IdTrack = idTrack;
+        playlistsTrack.IdPlaylist = idPlaylist;
+        await db.PlaylistsTracks.AddAsync(playlistsTrack);
+        await db.SaveChangesAsync();
     }
 
-    public Task RemoveFromPlaylistAsync(long idUser, long idPlaylist)
+    public async Task RemoveFromPlaylistAsync(long idTrack, long idPlaylist)
     {
-        throw new NotImplementedException();
-    }
-
-    public IActionResult GetImageByName(string name)
-    {
-        throw new NotImplementedException();
+        PlaylistsTrack? playlistsTrack = await db.PlaylistsTracks
+            .FirstOrDefaultAsync(x => x.IdTrack == idTrack && x.IdPlaylist == idPlaylist);
+        if (playlistsTrack == null)
+            throw new Exception("Playlist track not found");
+        db.PlaylistsTracks.Remove(playlistsTrack);
+        await db.SaveChangesAsync();
     }
 }

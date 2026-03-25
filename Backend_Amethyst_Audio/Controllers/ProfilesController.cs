@@ -1,5 +1,6 @@
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Services.Abstractions;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend_Amethyst_Audio.Controllers;
@@ -27,14 +28,22 @@ public class ProfilesController : ControllerBase
     }
 
     [HttpPatch("{id}")]
-    public IActionResult ChangeUserPassword(long id, [FromBody] ChangeUserPasswordDto dto)
+    public Task<IActionResult> ChangeUserPassword(long id, [FromBody] ChangeUserPasswordDto dto)
     {
         throw new NotImplementedException();
     }
 
     [HttpDelete("{id}")]
-    public IActionResult DeleteUser(long id)
+    public async Task<IActionResult> DeleteUser(long id)
     {
-        throw new NotImplementedException();
+        try
+        {
+            await _userService.DeleteAsync(id);
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return StatusCode(500, e.Message);
+        }
     }
 }

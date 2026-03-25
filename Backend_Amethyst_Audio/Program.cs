@@ -19,8 +19,13 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.LicenseKey = builder.Configuration.GetConnectionString("AutoMapperKey");
 }, typeof(UserMappingProfile));
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.LicenseKey = builder.Configuration.GetConnectionString("AutoMapperKey");
+}, typeof(TrackMappingProfile));
 
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ITrackService, TracksService>();
 builder.Services.AddScoped<IPlaylistService, PlaylistService>();
 builder.Services.AddControllers();
 
@@ -30,9 +35,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = "MyApi", // Кто выпустил
+            ValidIssuer = "BackendAmethystAudio", // Кто выпустил
             ValidateAudience = true,
-            ValidAudience = "MyFrontend", // Для кого
+            ValidAudience = "DesktopAmethystAudio", // Для кого
             ValidateLifetime = true, // Не просрочен ли
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
             ValidateIssuerSigningKey = true // Проверка подписи ключом

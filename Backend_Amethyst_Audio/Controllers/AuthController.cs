@@ -12,6 +12,7 @@ namespace Backend_Amethyst_Audio.Controllers;
 public class AuthController : ControllerBase
 {
     private IUserService _userService;
+    private IAuthService _authService;
     
     public AuthController(IUserService userService) => _userService = userService;
     
@@ -21,7 +22,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var result = await _userService.CreateAsync(dto);
+            UserInfoDto result = await _userService.CreateAsync(dto);
             return CreatedAtAction(nameof(CreateUser), new { id = result.Id }, result);
         }
         catch (BadHttpRequestException e)
@@ -38,7 +39,15 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        return Ok("");
+        try
+        {
+            UserInfoDto user = await _userService.GetLoginAsync(dto);
+            return Ok(user);
+        }
+        catch (KeyNotFoundException e)
+        {
+            return NotFound();
+        }
     }
 
     // Вход через Google/другие провайдеры

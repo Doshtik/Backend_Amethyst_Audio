@@ -14,29 +14,49 @@ public class TracksController : ControllerBase
     public TracksController(ITrackService trackService) => _trackService = trackService;
 
     [HttpPost("")]
-    public IActionResult CreateTrack([FromBody] CreateTrackDto dto)
+    public async Task<IActionResult> CreateTrack([FromBody] CreateTrackDto dto)
     {
-        throw new NotImplementedException();
+        try
+        {
+            TrackInfoDto result = await _trackService.CreateAsync(dto);
+            return CreatedAtAction(nameof(CreateTrack), new { id = result.Id }, result);
+        }
+        catch (BadHttpRequestException e)
+        {
+            return BadRequest(e.Message);
+        }
+        catch (Exception e)
+        {
+            return StatusCode(500, e.Message);
+        }
     }
     
     [HttpGet("{trackId}")]
-    public IActionResult GetTrack(long trackId)
+    public async Task<IActionResult> GetTrack(long trackId)
     {
         TrackInfoDto dto;
         throw new NotImplementedException();
     }
 
     [HttpPut("{trackId}")]
-    public IActionResult UpdateTrack(long trackId, [FromBody] ChangeTrackInfoDto dto)
+    public async Task<IActionResult> UpdateTrack(long trackId, [FromBody] ChangeTrackInfoDto dto)
     {
-        TrackInfoDto newTrackInfoDto;
+        TrackInfoDto  newTrackInfoDto = await _trackService.UpdateAsync(dto);
         throw new NotImplementedException();
     }
 
     [HttpDelete]
-    public IActionResult DeleteTrack(long trackId)
+    public async Task<IActionResult> DeleteTrack(long trackId)
     {
-        throw new NotImplementedException();
+        try
+        {
+            await _trackService.DeleteAsync(trackId);
+            return NoContent();
+        }
+        catch
+        {
+            return StatusCode(500);
+        }
     }
     
     

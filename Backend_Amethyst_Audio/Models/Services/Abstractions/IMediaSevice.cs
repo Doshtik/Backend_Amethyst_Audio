@@ -6,4 +6,11 @@ public interface IMediaSevice
 {
     Task<string> SaveFileAsync(IFormFile file, FileTypes typeName);
     Task DeleteFileAsync(string filePath);
+    
+    Task<string> GetTrackFilePathAsync(int id);
+    Task<string> GetTrackCoverPathAsync(int id);
+    Task<string> GetPlaylistCoverPathAsync(int id);
+    Task<string> GetAlbumCoverPathAsync(int id);
+    Task<string> GetUserAvatarPathAsync(int id);
+    Task<string> GetUserHeaderPathAsync(int id);
 }
