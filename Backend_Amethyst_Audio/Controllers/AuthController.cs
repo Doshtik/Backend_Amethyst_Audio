@@ -36,7 +36,7 @@ public class AuthController : ControllerBase
     }
     
     // Обычный вход
-    [HttpPost("login")]
+    [HttpGet("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         try

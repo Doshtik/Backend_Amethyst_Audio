@@ -115,6 +115,6 @@ public class UserService(AppDbContext db, IMapper mapper) : IUserService
 
     private string HashPassword(string password)
     {
-        return "";
+        return password;
     }
 }

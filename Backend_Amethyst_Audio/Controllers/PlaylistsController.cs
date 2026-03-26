@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend_Amethyst_Audio.Controllers;
 
 [ApiController]
-[Route("api/pages/[controller]")]
+[Route("api/[controller]")]
 public class PlaylistsController : ControllerBase
 {
     

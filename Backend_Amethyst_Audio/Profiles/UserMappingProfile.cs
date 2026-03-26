@@ -6,7 +6,7 @@ namespace Backend_Amethyst_Audio.Profiles;
 
 public class UserMappingProfile : Profile
 {
-    private readonly string _baseUrl;
+    private readonly string _baseUrl = Environment.GetEnvironmentVariable("BASE_URL");
     public UserMappingProfile()
     {
         // Создание: из DTO в сущность

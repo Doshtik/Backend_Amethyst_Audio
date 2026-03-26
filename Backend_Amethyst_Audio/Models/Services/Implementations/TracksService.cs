@@ -112,7 +112,6 @@ public class TracksService(AppDbContext db, IMapper mapper) : ITrackService
             {
                 Id = pt.IdTrackNavigation.Id,
                 Name = pt.IdTrackNavigation.Name,
-                CoverUrl = pt.IdTrackNavigation.CoverFileName,
                 DurationSec = pt.IdTrackNavigation.DurationSec,
                 UserList = mapper.Map<List<UserInfoDto>>(pt.IdTrackNavigation.TracksAuthors.ToList())
             })
