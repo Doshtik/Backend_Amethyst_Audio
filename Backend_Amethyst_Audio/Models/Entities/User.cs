@@ -43,7 +43,7 @@ public partial class User
 
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
-    public virtual ICollection<OauthUser> OauthUsers { get; set; } = new List<OauthUser>();
+    public virtual ICollection<AuthUser> OauthUsers { get; set; } = new List<AuthUser>();
 
     public virtual ICollection<Playlist> Playlists { get; set; } = new List<Playlist>();
 

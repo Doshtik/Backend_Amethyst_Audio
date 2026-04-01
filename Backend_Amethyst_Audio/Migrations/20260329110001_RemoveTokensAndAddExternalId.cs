@@ -7,13 +7,16 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend_Amethyst_Audio.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class RemoveTokensAndAddExternalId : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
                 name: "collections");
+
+            migrationBuilder.EnsureSchema(
+                name: "auth");
 
             migrationBuilder.EnsureSchema(
                 name: "admin");
@@ -23,9 +26,6 @@ namespace Backend_Amethyst_Audio.Migrations
 
             migrationBuilder.EnsureSchema(
                 name: "users");
-
-            migrationBuilder.EnsureSchema(
-                name: "auth");
 
             migrationBuilder.EnsureSchema(
                 name: "moderation");
@@ -45,6 +45,20 @@ namespace Backend_Amethyst_Audio.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_albums_id", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "auth_providers",
+                schema: "auth",
+                columns: table => new
+                {
+                    id = table.Column<short>(type: "smallint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    provider_name = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_auth_providers_id", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -73,20 +87,6 @@ namespace Backend_Amethyst_Audio.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_moods_id", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "oauth_providers",
-                schema: "auth",
-                columns: table => new
-                {
-                    id = table.Column<short>(type: "smallint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    provider_name = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_oauth_providers_id", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -298,6 +298,36 @@ namespace Backend_Amethyst_Audio.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "auth_users",
+                schema: "auth",
+                columns: table => new
+                {
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_user = table.Column<long>(type: "bigint", nullable: false),
+                    id_provider = table.Column<short>(type: "smallint", nullable: false),
+                    external_id = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_auth_users_id", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_oauth_users_id_provider",
+                        column: x => x.id_provider,
+                        principalSchema: "auth",
+                        principalTable: "auth_providers",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_oauth_users_id_user",
+                        column: x => x.id_user,
+                        principalSchema: "users",
+                        principalTable: "users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "libraries",
                 schema: "collections",
                 columns: table => new
@@ -344,40 +374,6 @@ namespace Backend_Amethyst_Audio.Migrations
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "fk_notifications_id_user",
-                        column: x => x.id_user,
-                        principalSchema: "users",
-                        principalTable: "users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "oauth_users",
-                schema: "auth",
-                columns: table => new
-                {
-                    id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    id_user = table.Column<long>(type: "bigint", nullable: false),
-                    id_provider = table.Column<short>(type: "smallint", nullable: false),
-                    access_token = table.Column<string>(type: "text", nullable: true),
-                    refresh_token = table.Column<string>(type: "text", nullable: true),
-                    token_expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_oauth_users_id", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_oauth_users_id_provider",
-                        column: x => x.id_provider,
-                        principalSchema: "auth",
-                        principalTable: "oauth_providers",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "fk_oauth_users_id_user",
                         column: x => x.id_user,
                         principalSchema: "users",
                         principalTable: "users",
@@ -638,7 +634,7 @@ namespace Backend_Amethyst_Audio.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "oauth_employees",
+                name: "auth_employees",
                 schema: "auth",
                 columns: table => new
                 {
@@ -646,15 +642,11 @@ namespace Backend_Amethyst_Audio.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     id_employee = table.Column<int>(type: "integer", nullable: false),
                     id_provider = table.Column<short>(type: "smallint", nullable: false),
-                    access_token = table.Column<string>(type: "text", nullable: true),
-                    refresh_token = table.Column<string>(type: "text", nullable: true),
-                    token_expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
+                    external_id = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_oauth_employees_id", x => x.id);
+                    table.PrimaryKey("pk_auth_employees_id", x => x.id);
                     table.ForeignKey(
                         name: "fk_oauth_employees_id_employee",
                         column: x => x.id_employee,
@@ -666,7 +658,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         name: "fk_oauth_users_id_provider",
                         column: x => x.id_provider,
                         principalSchema: "auth",
-                        principalTable: "oauth_providers",
+                        principalTable: "auth_providers",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -818,6 +810,32 @@ namespace Backend_Amethyst_Audio.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_auth_employees_id_provider",
+                schema: "auth",
+                table: "auth_employees",
+                column: "id_provider");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_auth_employees_employee_provider",
+                schema: "auth",
+                table: "auth_employees",
+                columns: new[] { "id_employee", "id_provider" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_auth_users_id_provider",
+                schema: "auth",
+                table: "auth_users",
+                column: "id_provider");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_auth_users_id_user_id_provider",
+                schema: "auth",
+                table: "auth_users",
+                columns: new[] { "id_user", "id_provider" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_employees_id_role",
                 schema: "admin",
                 table: "employees",
@@ -860,32 +878,6 @@ namespace Backend_Amethyst_Audio.Migrations
                 schema: "users",
                 table: "notifications",
                 column: "id_user");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_oauth_employees_id_provider",
-                schema: "auth",
-                table: "oauth_employees",
-                column: "id_provider");
-
-            migrationBuilder.CreateIndex(
-                name: "uq_oauth_employees_employee_provider",
-                schema: "auth",
-                table: "oauth_employees",
-                columns: new[] { "id_employee", "id_provider" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_oauth_users_id_provider",
-                schema: "auth",
-                table: "oauth_users",
-                column: "id_provider");
-
-            migrationBuilder.CreateIndex(
-                name: "uq_oauth_users_id_user_id_provider",
-                schema: "auth",
-                table: "oauth_users",
-                columns: new[] { "id_user", "id_provider" },
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_playlists_id_access_type",
@@ -1065,20 +1057,20 @@ namespace Backend_Amethyst_Audio.Migrations
                 schema: "collections");
 
             migrationBuilder.DropTable(
+                name: "auth_employees",
+                schema: "auth");
+
+            migrationBuilder.DropTable(
+                name: "auth_users",
+                schema: "auth");
+
+            migrationBuilder.DropTable(
                 name: "libraries_tracks",
                 schema: "collections");
 
             migrationBuilder.DropTable(
                 name: "notifications",
                 schema: "users");
-
-            migrationBuilder.DropTable(
-                name: "oauth_employees",
-                schema: "auth");
-
-            migrationBuilder.DropTable(
-                name: "oauth_users",
-                schema: "auth");
 
             migrationBuilder.DropTable(
                 name: "playlists_tracks",
@@ -1113,16 +1105,16 @@ namespace Backend_Amethyst_Audio.Migrations
                 schema: "users");
 
             migrationBuilder.DropTable(
+                name: "auth_providers",
+                schema: "auth");
+
+            migrationBuilder.DropTable(
                 name: "libraries",
                 schema: "collections");
 
             migrationBuilder.DropTable(
                 name: "types_notifications",
                 schema: "users");
-
-            migrationBuilder.DropTable(
-                name: "oauth_providers",
-                schema: "auth");
 
             migrationBuilder.DropTable(
                 name: "employees",

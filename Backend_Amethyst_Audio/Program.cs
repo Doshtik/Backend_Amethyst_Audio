@@ -13,7 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DbConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DbConnection"), o => 
+        o.MigrationsHistoryTable("__EFMigrationsHistory", "public")));
 
 builder.Services.AddAutoMapper(cfg =>
 {
@@ -35,9 +36,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = "BackendAmethystAudio", // Кто выпустил
+            ValidIssuer = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Issuer"]).ToString(), // Кто выпустил
             ValidateAudience = true,
-            ValidAudience = "DesktopAmethystAudio", // Для кого
+            ValidAudience = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Audience"]).ToString(), // Для кого
             ValidateLifetime = true, // Не просрочен ли
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
             ValidateIssuerSigningKey = true // Проверка подписи ключом
@@ -48,7 +49,7 @@ var app = builder.Build();
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseMiddleware<LastVisitMiddleware>();
+//app.UseMiddleware<LastVisitMiddleware>();
 app.UseHttpsRedirection();
 app.MapControllers();
 app.Run();

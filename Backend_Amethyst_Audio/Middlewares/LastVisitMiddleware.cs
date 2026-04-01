@@ -19,7 +19,7 @@ public class LastVisitMiddleware
         // 1. Проверяем, авторизован ли пользователь
         if (context.User.Identity?.IsAuthenticated == true)
         {
-            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string? userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (userId != null)
             {

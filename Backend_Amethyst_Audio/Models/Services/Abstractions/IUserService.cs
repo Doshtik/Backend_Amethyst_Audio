@@ -9,6 +9,7 @@ public interface IUserService
     Task<List<UserInfoDto>> GetAllAsync();
     
     Task<UserInfoDto> CreateAsync(CreateUserDto dto);
+    Task<UserInfoDto> LoginAsync(LoginDto dto);
     Task UpdateAsync(long id, ChangeUserInfoDto dto);
     Task ChangePasswordAsync(long id, ChangeUserPasswordDto dto);
     Task DeleteAsync(long id);
@@ -19,5 +20,4 @@ public interface IUserService
     
     Task FollowAsync(FollowUserDto dto);
     Task UnfollowAsync(FollowUserDto dto);
-    Task<UserInfoDto> GetLoginAsync(LoginDto dto);
 }

@@ -27,7 +27,7 @@ public partial class Employee
 
     public virtual Role IdRoleNavigation { get; set; } = null!;
 
-    public virtual ICollection<OauthEmployee> OauthEmployees { get; set; } = new List<OauthEmployee>();
+    public virtual ICollection<AuthEmployee> OauthEmployees { get; set; } = new List<AuthEmployee>();
 
     public virtual ICollection<ReportAnswer> ReportAnswers { get; set; } = new List<ReportAnswer>();
 }

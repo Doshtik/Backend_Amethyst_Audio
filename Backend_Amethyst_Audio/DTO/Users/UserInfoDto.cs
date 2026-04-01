@@ -17,4 +17,5 @@ public class UserInfoDto
     public string? HeaderUrl { get; set; } // Ссылка на задний фон пользователя
     
     public bool IsVerified { get; set; }
+    public string? Token { get; set; }
 }

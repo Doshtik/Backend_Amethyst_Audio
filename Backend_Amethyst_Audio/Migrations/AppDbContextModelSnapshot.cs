@@ -121,6 +121,90 @@ namespace Backend_Amethyst_Audio.Migrations
                     b.ToTable("albums_tracks", "collections");
                 });
 
+            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.AuthEmployee", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<long>("ExternalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("external_id");
+
+                    b.Property<int>("IdEmployee")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_employee");
+
+                    b.Property<short>("IdProvider")
+                        .HasColumnType("smallint")
+                        .HasColumnName("id_provider");
+
+                    b.HasKey("Id")
+                        .HasName("pk_auth_employees_id");
+
+                    b.HasIndex("IdProvider");
+
+                    b.HasIndex(new[] { "IdEmployee", "IdProvider" }, "uq_auth_employees_employee_provider")
+                        .IsUnique();
+
+                    b.ToTable("auth_employees", "auth");
+                });
+
+            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.AuthProvider", b =>
+                {
+                    b.Property<short>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
+
+                    b.Property<string>("ProviderName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("provider_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_auth_providers_id");
+
+                    b.ToTable("auth_providers", "auth");
+                });
+
+            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.AuthUser", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("ExternalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("external_id");
+
+                    b.Property<short>("IdProvider")
+                        .HasColumnType("smallint")
+                        .HasColumnName("id_provider");
+
+                    b.Property<long>("IdUser")
+                        .HasColumnType("bigint")
+                        .HasColumnName("id_user");
+
+                    b.HasKey("Id")
+                        .HasName("pk_auth_users_id");
+
+                    b.HasIndex("IdProvider");
+
+                    b.HasIndex(new[] { "IdUser", "IdProvider" }, "uq_auth_users_id_user_id_provider")
+                        .IsUnique();
+
+                    b.ToTable("auth_users", "auth");
+                });
+
             modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.Employee", b =>
                 {
                     b.Property<int>("Id")
@@ -329,130 +413,6 @@ namespace Backend_Amethyst_Audio.Migrations
                     b.HasIndex("IdUser");
 
                     b.ToTable("notifications", "users");
-                });
-
-            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.OauthEmployee", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AccessToken")
-                        .HasColumnType("text")
-                        .HasColumnName("access_token");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<int>("IdEmployee")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_employee");
-
-                    b.Property<short>("IdProvider")
-                        .HasColumnType("smallint")
-                        .HasColumnName("id_provider");
-
-                    b.Property<string>("RefreshToken")
-                        .HasColumnType("text")
-                        .HasColumnName("refresh_token");
-
-                    b.Property<DateTime?>("TokenExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("token_expires_at");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.HasKey("Id")
-                        .HasName("pk_oauth_employees_id");
-
-                    b.HasIndex("IdProvider");
-
-                    b.HasIndex(new[] { "IdEmployee", "IdProvider" }, "uq_oauth_employees_employee_provider")
-                        .IsUnique();
-
-                    b.ToTable("oauth_employees", "auth");
-                });
-
-            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.OauthProvider", b =>
-                {
-                    b.Property<short>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
-
-                    b.Property<string>("ProviderName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("provider_name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_oauth_providers_id");
-
-                    b.ToTable("oauth_providers", "auth");
-                });
-
-            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.OauthUser", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("AccessToken")
-                        .HasColumnType("text")
-                        .HasColumnName("access_token");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<short>("IdProvider")
-                        .HasColumnType("smallint")
-                        .HasColumnName("id_provider");
-
-                    b.Property<long>("IdUser")
-                        .HasColumnType("bigint")
-                        .HasColumnName("id_user");
-
-                    b.Property<string>("RefreshToken")
-                        .HasColumnType("text")
-                        .HasColumnName("refresh_token");
-
-                    b.Property<DateTime?>("TokenExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("token_expires_at");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.HasKey("Id")
-                        .HasName("pk_oauth_users_id");
-
-                    b.HasIndex("IdProvider");
-
-                    b.HasIndex(new[] { "IdUser", "IdProvider" }, "uq_oauth_users_id_user_id_provider")
-                        .IsUnique();
-
-                    b.ToTable("oauth_users", "auth");
                 });
 
             modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.Pace", b =>
@@ -1142,6 +1102,48 @@ namespace Backend_Amethyst_Audio.Migrations
                     b.Navigation("IdTrackNavigation");
                 });
 
+            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.AuthEmployee", b =>
+                {
+                    b.HasOne("Backend_Amethyst_Audio.Models.Entities.Employee", "IdEmployeeNavigation")
+                        .WithMany("OauthEmployees")
+                        .HasForeignKey("IdEmployee")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_oauth_employees_id_employee");
+
+                    b.HasOne("Backend_Amethyst_Audio.Models.Entities.AuthProvider", "IdProviderNavigation")
+                        .WithMany("OauthEmployees")
+                        .HasForeignKey("IdProvider")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_oauth_users_id_provider");
+
+                    b.Navigation("IdEmployeeNavigation");
+
+                    b.Navigation("IdProviderNavigation");
+                });
+
+            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.AuthUser", b =>
+                {
+                    b.HasOne("Backend_Amethyst_Audio.Models.Entities.AuthProvider", "IdProviderNavigation")
+                        .WithMany("OauthUsers")
+                        .HasForeignKey("IdProvider")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_oauth_users_id_provider");
+
+                    b.HasOne("Backend_Amethyst_Audio.Models.Entities.User", "IdUserNavigation")
+                        .WithMany("OauthUsers")
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_oauth_users_id_user");
+
+                    b.Navigation("IdProviderNavigation");
+
+                    b.Navigation("IdUserNavigation");
+                });
+
             modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.Employee", b =>
                 {
                     b.HasOne("Backend_Amethyst_Audio.Models.Entities.Role", "IdRoleNavigation")
@@ -1204,48 +1206,6 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasConstraintName("fk_notifications_id_user");
 
                     b.Navigation("IdTypeNavigation");
-
-                    b.Navigation("IdUserNavigation");
-                });
-
-            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.OauthEmployee", b =>
-                {
-                    b.HasOne("Backend_Amethyst_Audio.Models.Entities.Employee", "IdEmployeeNavigation")
-                        .WithMany("OauthEmployees")
-                        .HasForeignKey("IdEmployee")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_oauth_employees_id_employee");
-
-                    b.HasOne("Backend_Amethyst_Audio.Models.Entities.OauthProvider", "IdProviderNavigation")
-                        .WithMany("OauthEmployees")
-                        .HasForeignKey("IdProvider")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_oauth_users_id_provider");
-
-                    b.Navigation("IdEmployeeNavigation");
-
-                    b.Navigation("IdProviderNavigation");
-                });
-
-            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.OauthUser", b =>
-                {
-                    b.HasOne("Backend_Amethyst_Audio.Models.Entities.OauthProvider", "IdProviderNavigation")
-                        .WithMany("OauthUsers")
-                        .HasForeignKey("IdProvider")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_oauth_users_id_provider");
-
-                    b.HasOne("Backend_Amethyst_Audio.Models.Entities.User", "IdUserNavigation")
-                        .WithMany("OauthUsers")
-                        .HasForeignKey("IdUser")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_oauth_users_id_user");
-
-                    b.Navigation("IdProviderNavigation");
 
                     b.Navigation("IdUserNavigation");
                 });
@@ -1497,6 +1457,13 @@ namespace Backend_Amethyst_Audio.Migrations
                     b.Navigation("SavedAlbums");
                 });
 
+            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.AuthProvider", b =>
+                {
+                    b.Navigation("OauthEmployees");
+
+                    b.Navigation("OauthUsers");
+                });
+
             modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.Employee", b =>
                 {
                     b.Navigation("OauthEmployees");
@@ -1517,13 +1484,6 @@ namespace Backend_Amethyst_Audio.Migrations
             modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.Mood", b =>
                 {
                     b.Navigation("Tracks");
-                });
-
-            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.OauthProvider", b =>
-                {
-                    b.Navigation("OauthEmployees");
-
-                    b.Navigation("OauthUsers");
                 });
 
             modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.Pace", b =>

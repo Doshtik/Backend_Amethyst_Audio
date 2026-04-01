@@ -12,10 +12,12 @@ namespace Backend_Amethyst_Audio.Controllers;
 public class AuthController : ControllerBase
 {
     private IUserService _userService;
-    private IAuthService _authService;
-    
-    public AuthController(IUserService userService) => _userService = userService;
-    
+
+    public AuthController(IUserService userService)
+    {
+        _userService = userService;
+    }
+
     // Регистрация
     [HttpPost("signin")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
@@ -41,7 +43,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            UserInfoDto user = await _userService.GetLoginAsync(dto);
+            UserInfoDto user = await _userService.LoginAsync(dto);
             return Ok(user);
         }
         catch (KeyNotFoundException e)

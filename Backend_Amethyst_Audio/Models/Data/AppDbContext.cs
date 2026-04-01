@@ -34,11 +34,11 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Notification> Notifications { get; set; }
 
-    public virtual DbSet<OauthEmployee> OauthEmployees { get; set; }
+    public virtual DbSet<AuthEmployee> OauthEmployees { get; set; }
 
-    public virtual DbSet<OauthProvider> OauthProviders { get; set; }
+    public virtual DbSet<AuthProvider> OauthProviders { get; set; }
 
-    public virtual DbSet<OauthUser> OauthUsers { get; set; }
+    public virtual DbSet<AuthUser> OauthUsers { get; set; }
 
     public virtual DbSet<Pace> Paces { get; set; }
 
@@ -261,27 +261,20 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("fk_notifications_id_user");
         });
 
-        modelBuilder.Entity<OauthEmployee>(entity =>
+        modelBuilder.Entity<AuthEmployee>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("pk_oauth_employees_id");
+            entity.HasKey(e => e.Id).HasName("pk_auth_employees_id");
 
-            entity.ToTable("oauth_employees", "auth");
+            entity.ToTable("auth_employees", "auth");
 
-            entity.HasIndex(e => new { e.IdEmployee, e.IdProvider }, "uq_oauth_employees_employee_provider").IsUnique();
+            entity.HasIndex(e => new { e.IdEmployee, e.IdProvider }, "uq_auth_employees_employee_provider").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.AccessToken).HasColumnName("access_token");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnName("created_at");
             entity.Property(e => e.IdEmployee).HasColumnName("id_employee");
             entity.Property(e => e.IdProvider).HasColumnName("id_provider");
-            entity.Property(e => e.RefreshToken).HasColumnName("refresh_token");
-            entity.Property(e => e.TokenExpiresAt).HasColumnName("token_expires_at");
-            entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnName("updated_at");
-
+            entity.Property(e => e.ExternalId)
+                .HasColumnName("external_id")
+                .IsRequired();
             entity.HasOne(d => d.IdEmployeeNavigation).WithMany(p => p.OauthEmployees)
                 .HasForeignKey(d => d.IdEmployee)
                 .HasConstraintName("fk_oauth_employees_id_employee");
@@ -291,41 +284,33 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("fk_oauth_users_id_provider");
         });
 
-        modelBuilder.Entity<OauthProvider>(entity =>
+        modelBuilder.Entity<AuthProvider>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("pk_oauth_providers_id");
+            entity.HasKey(e => e.Id).HasName("pk_auth_providers_id");
 
-            entity.ToTable("oauth_providers", "auth");
+            entity.ToTable("auth_providers", "auth");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.ProviderName).HasColumnName("provider_name");
         });
 
-        modelBuilder.Entity<OauthUser>(entity =>
+        modelBuilder.Entity<AuthUser>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("pk_oauth_users_id");
+            entity.HasKey(e => e.Id).HasName("pk_auth_users_id");
 
-            entity.ToTable("oauth_users", "auth");
+            entity.ToTable("auth_users", "auth");
 
-            entity.HasIndex(e => new { e.IdUser, e.IdProvider }, "uq_oauth_users_id_user_id_provider").IsUnique();
+            entity.HasIndex(e => new { e.IdUser, e.IdProvider }, "uq_auth_users_id_user_id_provider").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.AccessToken).HasColumnName("access_token");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnName("created_at");
             entity.Property(e => e.IdProvider).HasColumnName("id_provider");
             entity.Property(e => e.IdUser).HasColumnName("id_user");
-            entity.Property(e => e.RefreshToken).HasColumnName("refresh_token");
-            entity.Property(e => e.TokenExpiresAt).HasColumnName("token_expires_at");
-            entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnName("updated_at");
-
+            entity.Property(e => e.ExternalId)
+                .HasColumnName("external_id")
+                .IsRequired();
             entity.HasOne(d => d.IdProviderNavigation).WithMany(p => p.OauthUsers)
                 .HasForeignKey(d => d.IdProvider)
                 .HasConstraintName("fk_oauth_users_id_provider");
-
             entity.HasOne(d => d.IdUserNavigation).WithMany(p => p.OauthUsers)
                 .HasForeignKey(d => d.IdUser)
                 .HasConstraintName("fk_oauth_users_id_user");

@@ -3,10 +3,11 @@ using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Models.Data;
 using Backend_Amethyst_Audio.Models.Entities;
 using Backend_Amethyst_Audio.Services.Abstractions;
+using Microsoft.AspNetCore.Identity;
 
 namespace Backend_Amethyst_Audio.Services.Implementations;
 
-public class UserService(AppDbContext db, IMapper mapper) : IUserService
+public class UserService(AppDbContext db, ITokenService tokenService, IMapper mapper, ILogger logger) : IUserService
 {
     public async Task<UserInfoDto> GetByIdAsync(long id)
     {
@@ -28,12 +29,34 @@ public class UserService(AppDbContext db, IMapper mapper) : IUserService
     public async Task<UserInfoDto> CreateAsync(CreateUserDto dto)
     {
         User user = mapper.Map<User>(dto);
-        user.PasswordHash = HashPassword(dto.Password);
+        var hasher = new PasswordHasher<User>();
+        user.PasswordHash = hasher.HashPassword(user, dto.Password);
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        return mapper.Map<UserInfoDto>(user);
+        UserInfoDto userDto = mapper.Map<UserInfoDto>(user);
+        userDto.Token = tokenService.GenerateJwtToken(user);
+        return userDto;
+    }
+
+    public async Task<UserInfoDto> LoginAsync(LoginDto dto)
+    {
+        var user = db.Users.FirstOrDefault(x => 
+            x.Nickname == dto.Nickname || x.Email == dto.Email);
+
+        if (user == null)
+            throw new KeyNotFoundException("Пользователь не найден");
+
+        var hasher = new PasswordHasher<User>();
+        var verificationResult = hasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
+
+        if (verificationResult == PasswordVerificationResult.Failed)
+            throw new UnauthorizedAccessException("Неверный пароль");
+
+        UserInfoDto userDto = mapper.Map<UserInfoDto>(user);
+        userDto.Token = tokenService.GenerateJwtToken(user);
+        return userDto;
     }
 
     public async Task UpdateAsync(long id, ChangeUserInfoDto dto)
@@ -99,22 +122,5 @@ public class UserService(AppDbContext db, IMapper mapper) : IUserService
         
         db.UsersSubs.Remove(sub);
         await db.SaveChangesAsync();
-    }
-
-    public Task<UserInfoDto> GetLoginAsync(LoginDto dto)
-    {
-        User? user = db.Users
-            .FirstOrDefault(x => 
-                x.Nickname == dto.Nickname || 
-                x.Email == dto.Email && 
-                x.PasswordHash == HashPassword(dto.Password));
-        if (user == null)
-            throw new KeyNotFoundException();
-        return Task.FromResult(mapper.Map<UserInfoDto>(user));
-    }
-
-    private string HashPassword(string password)
-    {
-        return password;
     }
 }
