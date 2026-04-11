@@ -5,16 +5,14 @@ namespace Backend_Amethyst_Audio.Services.Abstractions;
 
 public interface IPlaylistService
 {
-    Task<PlaylistInfoDto> GetByIdAsync(long id);
-    Task<long> GetLikedPlaylistId(long userId);
-    
-    Task<PlaylistInfoDto> CreateAsync(CreatePlaylistDto dto);
-    Task UpdateAsync(ChagnePlaylistInfoDto dto);
-    
+    Task<PlaylistInfoDto> GetByIdAsync(long id, string requestedBy = null);
+    Task<List<PlaylistInfoDto>> GetAllAsync();
+    Task<PlaylistInfoDto> CreateAsync(CreatePlaylistDto dto, long ownerId);
+    Task<PlaylistInfoDto> UpdateAsync(long id, ChangePlaylistInfoDto dto, string requestedBy);
+    Task DeleteAsync(long id, string requestedBy);
     Task<List<PlaylistInfoDto>> GetListByUserIdAsync(long userId);
-    Task<List<PlaylistInfoDto>> GetListBySearchAsync(string search);
+    Task<List<PlaylistInfoDto>> SearchAsync(long excludeUserId, string query, int limit = 50);
     Task<List<PlaylistInfoDto>> GetListSavedAsync(long userId);
-    
-    Task SavePlaylistAsync(long idUser, long idPlaylist);
-    Task UnsavePlaylistAsync(long idUser, long idPlaylist);
+    Task SavePlaylistAsync(long userId, long playlistId);
+    Task UnsavePlaylistAsync(long userId, long playlistId);
 }

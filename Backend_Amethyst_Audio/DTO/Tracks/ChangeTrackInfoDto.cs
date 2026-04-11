@@ -2,6 +2,8 @@ namespace Backend_Amethyst_Audio.DTO;
 
 public class ChangeTrackInfoDto
 {
+    public int Id { get; set; }
+    
     public string? Name { get; set; }
 
     public IFormFile? CoverFile { get; set; }

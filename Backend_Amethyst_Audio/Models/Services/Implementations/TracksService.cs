@@ -11,157 +11,367 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend_Amethyst_Audio.Services.Implementations;
 
-public class TracksService(AppDbContext db, IMapper mapper) : ITrackService
+public class TracksService : ITrackService
 {
-    private readonly string _baseUrl;
-    private IMediaSevice _mediaSevice;
+    private readonly AppDbContext _db;
+    private readonly IMapper _mapper;
+    private readonly ILogger<TracksService> _logger;
+    private readonly IMediaService _mediaService;
     
+    public TracksService(
+        AppDbContext db, 
+        IMapper mapper, 
+        ILogger<TracksService> logger,
+        IMediaService mediaService)
+    {
+        _db = db;
+        _mapper = mapper;
+        _logger = logger;
+        _mediaService = mediaService;
+    }
+
     public async Task<TrackInfoDto> GetByIdAsync(long id)
     {
-        Track track = await db.Tracks.FindAsync(id);
-        return mapper.Map<TrackInfoDto>(track);
+        _logger.LogDebug("[Debug] Get track by Id. TrackId={TrackId}", id);
+        
+        Track? track = await _db.Tracks
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == id);
+        
+        if (track == null)
+        {
+            _logger.LogWarning("[Warn] Track not found. TrackId={TrackId}", id);
+            throw new KeyNotFoundException("Track not found");
+        }
+        
+        _logger.LogDebug("[Debug] Track retrieved successfully. TrackId={TrackId}", id);
+        return _mapper.Map<TrackInfoDto>(track);
     }
 
     public async Task<List<TrackInfoDto>> GetAllAsync()
     {
-        List<Track> tracks = await db.Tracks.ToListAsync();
-        return mapper.Map<List<TrackInfoDto>>(tracks);
+        _logger.LogDebug("[Debug] Get all tracks request");
+        
+        var tracks = await _db
+            .Tracks.AsNoTracking()
+            .ToListAsync();
+        var result = _mapper.Map<List<TrackInfoDto>>(tracks);
+        
+        _logger.LogInformation("[Info] Retrieved {Count} tracks", result.Count);
+        return result;
     }
 
     public async Task<TrackInfoDto> CreateAsync(CreateTrackDto dto)
     {
-        Track track = mapper.Map<Track>(dto);
-        await db.Tracks.AddAsync(track);
-        await db.SaveChangesAsync();
-        track.Id = track.Id; // TODO: Проверить способ на достоверность
-        return mapper.Map<TrackInfoDto>(track);
+        _logger.LogInformation("[Info] Creating new track. Title={Title}, AuthorsId={AuthorsId}", 
+            dto.Name, dto.Authors.Select(x => x.Id));
+        
+
+        Track track = _mapper.Map<Track>(dto);
+        track.CreatedAt = DateTime.UtcNow;
+        
+        await _db.Tracks.AddAsync(track);
+        await _db.SaveChangesAsync();
+        
+        //TODO: save files in AppData with MediaService
+        
+        _logger.LogInformation("[Info] Track created successfully. TrackId={TrackId}, Title={Title}", 
+            track.Id, track.Name);
+        
+        return _mapper.Map<TrackInfoDto>(track);
     }
 
     public async Task<TrackInfoDto> UpdateAsync(ChangeTrackInfoDto dto)
     {
-        Track track = mapper.Map<Track>(dto);
-        db.Tracks.Update(track);
-        await db.SaveChangesAsync();
-        return mapper.Map<TrackInfoDto>(track);
+        _logger.LogInformation("[Info] Updating track. TrackId={TrackId}", dto.Id);
+        
+        Track? track = await _db.Tracks.FirstOrDefaultAsync(t => t.Id == dto.Id);
+        if (track == null)
+        {
+            _logger.LogWarning("[Warn] Track not found for update. TrackId={TrackId}", dto.Id);
+            throw new KeyNotFoundException("Track not found");
+        }
+
+        _mapper.Map(dto, track);
+        track.UpdatedAt = DateTime.UtcNow;
+        
+        _db.Tracks.Update(track);
+        await _db.SaveChangesAsync();
+        
+        //TODO: update files in AppData with MediaService
+        
+        _logger.LogInformation("[Info] Track updated successfully. TrackId={TrackId}", track.Id);
+        return _mapper.Map<TrackInfoDto>(track);
     }
 
     public async Task DeleteAsync(long id)
     {
-        Track track = await db.Tracks.FindAsync(id);
-        if  (track == null)
-            throw new KeyNotFoundException();
+        _logger.LogInformation("[Info] Deleting track. TrackId={TrackId}", id);
+        
+        var track = await _db.Tracks.FirstOrDefaultAsync(t => t.Id == id);
+        if (track == null)
+        {
+            _logger.LogWarning("[Warn] Track not found for deletion. TrackId={TrackId}", id);
+            throw new KeyNotFoundException("Track not found");
+        }
+        
+        // TODO: delete files from AppData with MediaService
+        // await _mediaService.DeleteFileAsync(track.TrackFileName);
+        // await _mediaService.DeleteFileAsync(track.CoverFileName);
+        
+        _db.Tracks.Remove(track);
+        await _db.SaveChangesAsync();
+        
+        _logger.LogInformation("[Info] Track deleted successfully. TrackId={TrackId}", id);
     }
 
     public async Task<List<TrackInfoDto>> GetListByGenreAsync(string genre)
     {
-        List<Track> tracks = await db.TracksGenres
+        _logger.LogDebug("[Debug] Get tracks by genre. Genre={Genre}", genre);
+        
+        if (string.IsNullOrWhiteSpace(genre))
+        {
+            _logger.LogWarning("[Warn] Empty genre parameter in GetListByGenreAsync");
+            throw new ArgumentException("Genre cannot be empty");
+        }
+        
+        var tracks = await _db.TracksGenres
+            .AsNoTracking()
             .Where(x => x.IdGenreNavigation.GenreName == genre)
             .Select(x => x.IdTrackNavigation)
             .ToListAsync();
-        return mapper.Map<List<TrackInfoDto>>(tracks);
+        
+        var result = _mapper.Map<List<TrackInfoDto>>(tracks);
+        
+        _logger.LogInformation("[Info] Retrieved {Count} tracks for genre={Genre}", result.Count, genre);
+        return result;
     }
 
     public async Task<List<TrackInfoDto>> GetListByTrackNameAsync(string trackName)
     {
-        List<Track> tracks = await db.Tracks.Where(x => x.Name == trackName).ToListAsync();
-        return mapper.Map<List<TrackInfoDto>>(tracks);
+        _logger.LogDebug("[Debug] Search tracks by name. Query={Query}", trackName);
+        
+        if (string.IsNullOrWhiteSpace(trackName))
+        {
+            _logger.LogWarning("[Warn] Empty track name in search query");
+            return new List<TrackInfoDto>();
+        }
+        
+        // Поиск с частичным совпадением (case-insensitive)
+        var tracks = await _db.Tracks
+            .AsNoTracking()
+            .Where(x => EF.Functions.Like(x.Name, $"%{trackName}%"))
+            .Take(100) // Ограничение результатов для производительности
+            .ToListAsync();
+        
+        var result = _mapper.Map<List<TrackInfoDto>>(tracks);
+        
+        _logger.LogInformation("[Info] Search completed. Query={Query}, Found={Count}", trackName, result.Count);
+        return result;
     }
 
     public async Task<List<TrackInfoDto>> GetListByUserIdAsync(long userId)
     {
-        List<Track> tracks = await db.TracksAuthors
+        _logger.LogDebug("[Debug] Get tracks by artist. ArtistId={ArtistId}", userId);
+        
+        var tracks = await _db.TracksAuthors
+            .AsNoTracking()
             .Where(x => x.IdAuthor == userId)
             .Select(x => x.IdTrackNavigation)
             .ToListAsync();
-        return mapper.Map<List<TrackInfoDto>>(tracks);
+        
+        var result = _mapper.Map<List<TrackInfoDto>>(tracks);
+        
+        _logger.LogInformation("[Info] Retrieved {Count} tracks for artist. ArtistId={ArtistId}", 
+            result.Count, userId);
+        return result;
     }
 
-    public async Task<List<TrackInfoDto>> GetListOfNewestAsync()
+    public async Task<List<TrackInfoDto>> GetListOfNewestAsync(int limit = 50)
     {
-        DateTime thresholdDate = DateTime.Today.AddDays(-60);
-        List<Track> tracks = await db.Tracks
+        _logger.LogDebug("[Debug] Get newest tracks. Limit={Limit}", limit);
+        
+        var thresholdDate = DateTime.UtcNow.AddDays(-60);
+        
+        var tracks = await _db.Tracks
+            .AsNoTracking()
             .Where(x => x.CreatedAt >= thresholdDate)
-            .ToListAsync<Track>();
-        return mapper.Map<List<TrackInfoDto>>(tracks);
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(limit)
+            .ToListAsync();
+        
+        var result = _mapper.Map<List<TrackInfoDto>>(tracks);
+        
+        _logger.LogInformation("[Info] Retrieved {Count} newest tracks. Since={Since}", 
+            result.Count, thresholdDate.ToString("yyyy-MM-dd"));
+        return result;
     }
 
-    public async Task<List<TrackInfoDto>> GetListOfLikedAsync(long likedPlaylistId)
+    public async Task<List<TrackInfoDto>> GetListOfLikedAsync(long playlistId)
     {
-        List<TrackInfoDto> likedTracks = await db.PlaylistsTracks
-            .Where(pt => pt.IdPlaylist == likedPlaylistId)
+        _logger.LogDebug("[Debug] Get liked tracks from playlist. PlaylistId={PlaylistId}", playlistId);
+        
+        var tracks = await _db.PlaylistsTracks
+            .AsNoTracking()
+            .Where(pt => pt.IdPlaylist == playlistId)
             .Select(pt => new TrackInfoDto
             {
                 Id = pt.IdTrackNavigation.Id,
                 Name = pt.IdTrackNavigation.Name,
                 CoverUrl = pt.IdTrackNavigation.CoverFileName,
                 DurationSec = pt.IdTrackNavigation.DurationSec,
-                UserList = mapper.Map<List<UserInfoDto>>(pt.IdTrackNavigation.TracksAuthors.ToList())
+                UserList = _mapper.Map<List<UserInfoDto>>(pt.IdTrackNavigation.TracksAuthors.ToList())
             })
             .ToListAsync();
-        return likedTracks;
+        
+        _logger.LogInformation("[Info] Retrieved {Count} liked tracks. PlaylistId={PlaylistId}", 
+            tracks.Count, playlistId);
+        return tracks;
     }
 
-    public async Task<List<TrackInfoDto>> GetListOfPersonalizedAsync(PageMyRecordPersonalizedDto dto)
+    public async Task<List<TrackInfoDto>> GetPersonalizedRecommendationsAsync(
+        PageMyRecordPersonalizedDto dto, 
+        string? userId = null)
     {
-        List<TrackInfoDto> personalized = await db.PlaylistsTracks
-            .Where(pt => 
-                pt.IdTrackNavigation.IdMoodNavigation.MoodName == dto.MoodName ||
-                pt.IdTrackNavigation.IdPaceNavigation.PaceName == dto.PaceName ||
-                pt.IdTrackNavigation.Country == dto.Country)
+        _logger.LogDebug("[Debug] Building personalized recommendations. Mood={Mood}, Pace={Pace}, UserId={UserId}", 
+            dto.MoodName ?? "*", dto.PaceName ?? "*", userId ?? "anonymous");
+        
+        // config validation
+        if (!string.IsNullOrWhiteSpace(dto.MoodName) && !await _db.Moods.AnyAsync(m => m.MoodName == dto.MoodName))
+        {
+            _logger.LogWarning("[Warn] Invalid mood filter. Mood={Mood}", dto.MoodName);
+            throw new ArgumentException($"Invalid mood: {dto.MoodName}");
+        }
+        
+        if (!string.IsNullOrWhiteSpace(dto.PaceName) && !await _db.Paces.AnyAsync(p => p.PaceName == dto.PaceName))
+        {
+            _logger.LogWarning("[Warn] Invalid pace filter. Pace={Pace}", dto.PaceName);
+            throw new ArgumentException($"Invalid pace: {dto.PaceName}");
+        }
+
+        // dynamic query
+        var query = _db.PlaylistsTracks
+            .AsNoTracking()
+            .AsQueryable();
+        
+        if (!string.IsNullOrWhiteSpace(dto.MoodName))
+            query = query.Where(pt => pt.IdTrackNavigation.IdMoodNavigation!.MoodName == dto.MoodName);
+        
+        if (!string.IsNullOrWhiteSpace(dto.PaceName))
+            query = query.Where(pt => pt.IdTrackNavigation.IdPaceNavigation!.PaceName == dto.PaceName);
+        
+        if (!string.IsNullOrWhiteSpace(dto.Country))
+            query = query.Where(pt => pt.IdTrackNavigation.Country == dto.Country);
+
+        var tracks = await query
             .Select(pt => new TrackInfoDto
             {
                 Id = pt.IdTrackNavigation.Id,
                 Name = pt.IdTrackNavigation.Name,
+                CoverUrl = pt.IdTrackNavigation.CoverFileName,
                 DurationSec = pt.IdTrackNavigation.DurationSec,
-                UserList = mapper.Map<List<UserInfoDto>>(pt.IdTrackNavigation.TracksAuthors.ToList())
+                UserList = _mapper.Map<List<UserInfoDto>>(pt.IdTrackNavigation.TracksAuthors.ToList())
             })
+            .Distinct()
+            .Take(50)
             .ToListAsync();
-        return personalized;
+        
+        _logger.LogInformation("[Info] Personalized recommendations generated. Count={Count}, UserId={UserId}", 
+            tracks.Count, userId ?? "anonymous");
+        
+        return tracks;
     }
 
-    public async Task<PageMyRecordDto> PageMyRecordAsync()
+    public async Task<PageMyRecordDto> GetRecommendationConfigAsync()
     {
-        PageMyRecordDto dto = new PageMyRecordDto
+        _logger.LogDebug("[Debug] Fetching recommendation configuration");
+        
+        var dto = new PageMyRecordDto
         {
-            AvailablePaces = await db.Paces.Select(x => x.PaceName).ToListAsync(),
-            AvailableMoods = await db.Moods.Select(x => x.MoodName).ToListAsync()
+            AvailablePaces = await _db.Paces.AsNoTracking().Select(x => x.PaceName).ToListAsync(),
+            AvailableMoods = await _db.Moods.AsNoTracking().Select(x => x.MoodName).ToListAsync()
         };
+        
+        _logger.LogInformation("[Info] Recommendation config loaded. Moods={MoodCount}, Paces={PaceCount}", 
+            dto.AvailableMoods.Count, dto.AvailablePaces.Count);
         return dto;
     }
 
-    public async Task<bool> IsLikedAsync(long idUser,  long idTrack)
+    public async Task<bool> IsLikedAsync(long userId, long trackId)
     {
-        Track? track = await db.LibrariesTracks
-            .Where(x => x.IdTrack == idTrack && x.IdLibraryNavigation.IdUser == idUser)
-            .Select(x => x.IdTrackNavigation)
-            .FirstOrDefaultAsync();
-        if (track == null)
-            return false;
-        return true;
-    }
-
-    public async Task AddInPlaylistAsync(long idTrack, long idPlaylist)
-    {
+        _logger.LogDebug("[Debug] Check if track is liked. UserId={UserId}, TrackId={TrackId}", userId, trackId);
         
-        PlaylistsTrack? playlistsTrack = db.PlaylistsTracks
-            .FirstOrDefault(x => x.IdTrack == idTrack && x.IdPlaylist == idPlaylist);
-        if (playlistsTrack != null)
-            throw new Exception("Playlist already exists");
-
-        playlistsTrack = new PlaylistsTrack();
-        playlistsTrack.IdTrack = idTrack;
-        playlistsTrack.IdPlaylist = idPlaylist;
-        await db.PlaylistsTracks.AddAsync(playlistsTrack);
-        await db.SaveChangesAsync();
+        var exists = await _db.LibrariesTracks
+            .AsNoTracking()
+            .AnyAsync(x => x.IdTrack == trackId && x.IdLibraryNavigation.IdUser == userId);
+        
+        _logger.LogDebug("[Debug] Like status: {IsLiked}. UserId={UserId}, TrackId={TrackId}", 
+            exists, userId, trackId);
+        return exists;
     }
 
-    public async Task RemoveFromPlaylistAsync(long idTrack, long idPlaylist)
+    public async Task AddInPlaylistAsync(long trackId, long playlistId)
     {
-        PlaylistsTrack? playlistsTrack = await db.PlaylistsTracks
-            .FirstOrDefaultAsync(x => x.IdTrack == idTrack && x.IdPlaylist == idPlaylist);
-        if (playlistsTrack == null)
-            throw new Exception("Playlist track not found");
-        db.PlaylistsTracks.Remove(playlistsTrack);
-        await db.SaveChangesAsync();
+        _logger.LogInformation("[Info] Add track to playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+            trackId, playlistId);
+        
+        bool isTrackExists = await _db.Tracks.AnyAsync(t => t.Id == trackId);
+        if (!isTrackExists)
+        {
+            _logger.LogWarning("[Warn] Track not found for playlist addition. TrackId={TrackId}", trackId);
+            throw new KeyNotFoundException("Track not found");
+        }
+        
+        bool isPlaylistExists = await _db.Playlists.AnyAsync(p => p.Id == playlistId);
+        if (!isPlaylistExists)
+        {
+            _logger.LogWarning("[Warn] Playlist not found for track addition. PlaylistId={PlaylistId}", playlistId);
+            throw new KeyNotFoundException("Playlist not found");
+        }
+        
+        bool isExisting = await _db.PlaylistsTracks
+            .AnyAsync(x => x.IdTrack == trackId && x.IdPlaylist == playlistId);
+        
+        if (isExisting)
+        {
+            _logger.LogWarning("[Warn] Track already in playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+                trackId, playlistId);
+            throw new InvalidOperationException("Track already exists in playlist");
+        }
+
+        var playlistTrack = new PlaylistsTrack
+        {
+            IdTrack = trackId,
+            IdPlaylist = playlistId,
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        await _db.PlaylistsTracks.AddAsync(playlistTrack);
+        await _db.SaveChangesAsync();
+        
+        _logger.LogInformation("[Info] Track added to playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+            trackId, playlistId);
+    }
+
+    public async Task RemoveFromPlaylistAsync(long trackId, long playlistId)
+    {
+        _logger.LogInformation("[Info] Remove track from playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+            trackId, playlistId);
+        
+        PlaylistsTrack? playlistTrack = await _db.PlaylistsTracks
+            .FirstOrDefaultAsync(x => x.IdTrack == trackId && x.IdPlaylist == playlistId);
+        
+        if (playlistTrack == null)
+        {
+            _logger.LogWarning("[Warn] Track not found in playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+                trackId, playlistId);
+            throw new KeyNotFoundException("Track not found in playlist");
+        }
+        
+        _db.PlaylistsTracks.Remove(playlistTrack);
+        await _db.SaveChangesAsync();
+        
+        _logger.LogInformation("[Info] Track removed from playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+            trackId, playlistId);
     }
 }

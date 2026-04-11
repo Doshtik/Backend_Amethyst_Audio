@@ -1,6 +1,7 @@
+using System.Security.Claims;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Services.Abstractions;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend_Amethyst_Audio.Controllers;
@@ -9,41 +10,273 @@ namespace Backend_Amethyst_Audio.Controllers;
 [Route("api/{controller}")]
 public class ProfilesController : ControllerBase
 {
-    private IUserService _userService;
+    private readonly IUserService _userService;
+    private readonly ILogger<ProfilesController> _logger;
     
-    public ProfilesController(IUserService userService) => _userService = userService;
-    
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateUser(long id, [FromBody] ChangeUserInfoDto dto)
+    public ProfilesController(IUserService userService, ILogger<ProfilesController> logger) 
+    {
+        _userService = userService;
+        _logger = logger;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
     {
         try
         {
-            await _userService.UpdateAsync(id, dto);
-            return Ok("Данные о пользователе успешно изменены");
+            _logger.LogInformation("[Info] Get all users request. RequestedBy={UserId}", 
+                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "anonymous");
+            
+            List<UserInfoDto> listDto = await _userService.GetAllAsync();
+            
+            _logger.LogInformation("[Info] Retrieved {Count} users", listDto.Count);
+            return Ok(listDto);
         }
         catch (Exception e)
         {
-            return StatusCode(500, e.Message);
+            _logger.LogError(e, "[Error] Failed to retrieve users list");
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(long id)
+    {
+        try
+        {
+            _logger.LogDebug("[Debug] Get user by Id request. TargetUserId={UserId}", id);
+            
+            UserInfoDto userDto = await _userService.GetByIdAsync(id);
+            
+            _logger.LogInformation("[Info] User retrieved successfully. UserId={UserId}", id);
+            return Ok(userDto);
+        }
+        catch (KeyNotFoundException e)
+        {
+            _logger.LogWarning("[Warn] User not found. UserId={UserId}", id);
+            return NotFound(new { error = e.Message });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Error] Failed to get user. UserId={UserId}", id);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+    
+    [HttpPut("{id}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateUser(long id, [FromBody] ChangeUserInfoDto dto)
+    {
+        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
+        // Check: only user can edit his own profile (or admin)
+        if (currentUserId != id.ToString() && !User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("[Warn] Unauthorized update attempt. CurrentUserId={CurrentId}, TargetUserId={TargetId}", 
+                currentUserId, id);
+            return Forbid();
+        }
+        
+        try
+        {
+            _logger.LogInformation("[Info] Update user request. UserId={UserId}, UpdatedFields={Fields}", 
+                id, string.Join(",", dto.GetType().GetProperties()
+                    .Where(p => p.GetValue(dto) != null)
+                    .Select(p => p.Name)));
+            
+            await _userService.UpdateAsync(id, dto);
+            
+            _logger.LogInformation("[Info] User data updated successfully. UserId={UserId}", id);
+            return Ok(new { message = "User data updated successfully" });
+        }
+        catch (KeyNotFoundException e)
+        {
+            _logger.LogWarning("[Warn] User not found for update. UserId={UserId}", id);
+            return NotFound(new { error = e.Message });
+        }
+        catch (ArgumentException e)
+        {
+            _logger.LogWarning("[Warn] Validation failed during update. UserId={UserId}, Reason={Reason}", 
+                id, e.Message);
+            return BadRequest(new { error = e.Message });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Error] Failed to update user. UserId={UserId}", id);
+            return StatusCode(500, new { error = "Internal server error" });
         }
     }
 
     [HttpPatch("{id}")]
-    public Task<IActionResult> ChangeUserPassword(long id, [FromBody] ChangeUserPasswordDto dto)
+    [Authorize]
+    public async Task<IActionResult> ChangeUserPassword(long id, [FromBody] ChangeUserPasswordDto dto)
     {
-        throw new NotImplementedException();
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteUser(long id)
-    {
+        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
+        if (currentUserId != id.ToString() && !User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("[Warn] Unauthorized password change attempt. CurrentUserId={CurrentId}, TargetUserId={TargetId}", 
+                currentUserId, id);
+            return Forbid();
+        }
+        
         try
         {
-            await _userService.DeleteAsync(id);
-            return NoContent();
+            _logger.LogInformation("[Info] Password change request. UserId={UserId}", id);
+            
+            await _userService.ChangePasswordAsync(id, dto);
+            
+            _logger.LogInformation("[Info] Password changed successfully. UserId={UserId}", id);
+            return Ok(new { message = "Password changed successfully" });
+        }
+        catch (KeyNotFoundException e)
+        {
+            _logger.LogWarning("[Warn] User not found for password change. UserId={UserId}", id);
+            return NotFound(new { error = e.Message });
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            _logger.LogWarning("[Warn] Invalid current password. UserId={UserId}", id);
+            return Unauthorized(new { error = e.Message });
+        }
+        catch (ArgumentException e)
+        {
+            _logger.LogWarning("[Warn] Password validation failed. UserId={UserId}, Reason={Reason}", id, e.Message);
+            return BadRequest(new { error = e.Message });
         }
         catch (Exception e)
         {
-            return StatusCode(500, e.Message);
+            _logger.LogError(e, "[Error] Failed to change password. UserId={UserId}", id);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteUser(long id)
+    {
+        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
+        if (currentUserId != id.ToString() && !User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("[Warn] Unauthorized delete attempt. CurrentUserId={CurrentId}, TargetUserId={TargetId}", 
+                currentUserId, id);
+            return Forbid();
+        }
+        
+        try
+        {
+            _logger.LogInformation("[Info] Delete user request. UserId={UserId}, RequestedBy={RequestId}", 
+                id, currentUserId);
+            
+            await _userService.DeleteAsync(id);
+            
+            _logger.LogInformation("[Info] User deleted successfully. UserId={UserId}", id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException e)
+        {
+            _logger.LogWarning("[Warn] User not found for deletion. UserId={UserId}", id);
+            return NotFound(new { error = e.Message });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Error] Failed to delete user. UserId={UserId}", id);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+    
+    //TODO: GetUserSavedPlaylists
+    //TODO: GetUserSavedAlbums
+    
+    [HttpPost("subscription")]
+    [Authorize]
+    public async Task<IActionResult> FollowUser([FromBody] FollowUserDto dto)
+    {
+        var userIdClaim = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+    
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var currentUserId))
+        {
+            _logger.LogWarning("[Warn] Follow attempt with invalid or missing user claim");
+            return Unauthorized(new { error = "Authentication required" });
+        }
+
+        // Security: override IdSubscriber with the token data to prevent the client from spoofing the subscriber
+        dto.IdSubscriber = currentUserId;
+        
+        try
+        {
+            _logger.LogInformation("[Info] Follow request. SubscriberId={SubscriberId} → TargetUserId={TargetUserId}", 
+                dto.IdSubscriber, dto.IdTargetUser);
+            
+            await _userService.FollowAsync(dto);
+            
+            _logger.LogInformation("[Info] Follow successful. SubscriberId={SubscriberId} → TargetUserId={TargetUserId}", 
+                dto.IdSubscriber, dto.IdTargetUser);
+            return Ok(new { message = "Successfully followed user" });
+        }
+        catch (ArgumentException e)
+        {
+            _logger.LogWarning("[Warn] Validation failed for follow request. SubscriberId={SubscriberId}, TargetUserId={TargetUserId}, Reason={Reason}", 
+                dto.IdSubscriber, dto.IdTargetUser, e.Message);
+            return BadRequest(new { error = e.Message });
+        }
+        catch (InvalidOperationException e)
+        {
+            _logger.LogWarning("[Warn] Follow conflict. SubscriberId={SubscriberId}, TargetUserId={TargetUserId}, Reason={Reason}", 
+                dto.IdSubscriber, dto.IdTargetUser, e.Message);
+            return Conflict(new { error = e.Message });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Error] Failed to process follow request. SubscriberId={SubscriberId}, TargetUserId={TargetUserId}", 
+                dto.IdSubscriber, dto.IdTargetUser);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+
+    [HttpDelete("subscription")]
+    [Authorize]
+    public async Task<IActionResult> UnfollowUser([FromBody] FollowUserDto dto)
+    {
+        var userIdClaim = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+    
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var currentUserId))
+        {
+            _logger.LogWarning("[Warn] Unfollow attempt with invalid or missing user claim");
+            return Unauthorized(new { error = "Authentication required" });
+        }
+
+        dto.IdSubscriber = currentUserId;
+        
+        try
+        {
+            _logger.LogInformation("[Info] Unfollow request. SubscriberId={SubscriberId} → TargetUserId={TargetUserId}", 
+                dto.IdSubscriber, dto.IdTargetUser);
+            
+            await _userService.UnfollowAsync(dto);
+            
+            _logger.LogInformation("[Info] Unfollow successful. SubscriberId={SubscriberId} → TargetUserId={TargetUserId}", 
+                dto.IdSubscriber, dto.IdTargetUser);
+            return Ok(new { message = "Successfully unfollowed user" });
+        }
+        catch (ArgumentException e)
+        {
+            _logger.LogWarning("[Warn] Validation failed for unfollow request. SubscriberId={SubscriberId}, TargetUserId={TargetUserId}, Reason={Reason}", 
+                dto.IdSubscriber, dto.IdTargetUser, e.Message);
+            return BadRequest(new { error = e.Message });
+        }
+        catch (InvalidOperationException e)
+        {
+            _logger.LogWarning("[Warn] Unfollow conflict. SubscriberId={SubscriberId}, TargetUserId={TargetUserId}, Reason={Reason}", 
+                dto.IdSubscriber, dto.IdTargetUser, e.Message);
+            return NotFound(new { error = e.Message });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Error] Failed to process unfollow request. SubscriberId={SubscriberId}, TargetUserId={TargetUserId}", 
+                dto.IdSubscriber, dto.IdTargetUser);
+            return StatusCode(500, new { error = "Internal server error" });
         }
     }
 }

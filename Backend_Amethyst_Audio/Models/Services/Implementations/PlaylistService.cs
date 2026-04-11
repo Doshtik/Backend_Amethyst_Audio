@@ -1,58 +1,307 @@
+using AutoMapper;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Models.Data;
 using Backend_Amethyst_Audio.Models.Entities;
 using Backend_Amethyst_Audio.Services.Abstractions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend_Amethyst_Audio.Services.Implementations;
 
-public class PlaylistService(AppDbContext db) : IPlaylistService
+public class PlaylistService : IPlaylistService
 {
-    public Task<PlaylistInfoDto> GetByIdAsync(long id)
+    private readonly AppDbContext _db;
+    private readonly IMapper _mapper;
+    private readonly ILogger<PlaylistService> _logger;
+    
+    public PlaylistService(AppDbContext db, IMapper mapper, ILogger<PlaylistService> logger)
     {
-        throw new NotImplementedException();
+        _db = db;
+        _mapper = mapper;
+        _logger = logger;
     }
 
-    public Task<long> GetLikedPlaylistId(long userId)
+    public async Task<PlaylistInfoDto> GetByIdAsync(long id, string requestedBy = null)
     {
-        long playlistId = db.Playlists
-            .Where(x => x.Name == "Liked" && x.IdUser == userId)
-            .Select(x => x.Id)
-            .First();
-        return Task.FromResult(playlistId);
+        _logger.LogDebug("[Debug] Get playlist by Id. PlaylistId={PlaylistId}, RequestedBy={UserId}", 
+            id, requestedBy ?? "anonymous");
+        
+        Playlist? playlist = await _db.Playlists
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (playlist == null)
+        {
+            _logger.LogWarning("[Warn] Playlist not found. PlaylistId={PlaylistId}", id);
+            throw new KeyNotFoundException("Playlist not found");
+        }
+        
+        _logger.LogDebug("[Debug] Playlist retrieved. PlaylistId={PlaylistId}, OwnerId={OwnerId}", 
+            id, playlist.IdUser);
+        
+        return _mapper.Map<PlaylistInfoDto>(playlist);
     }
 
-    public async Task<PlaylistInfoDto> CreateAsync(CreatePlaylistDto dto)
+    public async Task<List<PlaylistInfoDto>> GetAllAsync()
     {
-        throw new NotImplementedException();
+        _logger.LogDebug("[Debug] Get all playlists request");
+        
+        var playlists = await _db.Playlists
+            .AsNoTracking()
+            .ToListAsync();
+        
+        var result = _mapper.Map<List<PlaylistInfoDto>>(playlists);
+        
+        _logger.LogInformation("[Info] Retrieved {Count} playlists", result.Count);
+        return result;
     }
 
-    public Task UpdateAsync(ChagnePlaylistInfoDto dto)
+    public async Task<PlaylistInfoDto> CreateAsync(CreatePlaylistDto dto, long ownerId)
     {
-        throw new NotImplementedException();
+        _logger.LogInformation("[Info] Creating playlist. OwnerId={OwnerId}, Title={Title}, IsPublic={IsPublic}", 
+            ownerId, dto.Name, dto.AccessTypeName);
+        
+        // Playlist name validation
+        if (string.IsNullOrWhiteSpace(dto.Name))
+        {
+            _logger.LogWarning("[Warn] Playlist creation failed: empty name. OwnerId={OwnerId}", ownerId);
+            throw new ArgumentException("Playlist name cannot be empty");
+        }
+        
+        // Playlist name length validation
+        if (dto.Name.Length > 200)
+        {
+            _logger.LogWarning("[Warn] Playlist name too long. Length={Length}", dto.Name.Length);
+            throw new ArgumentException("Playlist name is too long");
+        }
+
+        var playlist = _mapper.Map<Playlist>(dto);
+        playlist.IdUser = ownerId;
+        playlist.CreatedAt = DateTime.UtcNow;
+        playlist.UpdatedAt = DateTime.UtcNow;
+        
+        await _db.Playlists.AddAsync(playlist);
+        await _db.SaveChangesAsync();
+        
+        _logger.LogInformation("[Info] Playlist created successfully. PlaylistId={PlaylistId}, Title={Title}", 
+            playlist.Id, playlist.Name);
+        
+        return _mapper.Map<PlaylistInfoDto>(playlist);
     }
 
-    public Task<List<PlaylistInfoDto>> GetListByUserIdAsync(long userId)
+    public async Task<PlaylistInfoDto> UpdateAsync(long id, ChangePlaylistInfoDto dto, string requestedBy)
     {
-        throw new NotImplementedException();
+        _logger.LogInformation("[Info] Update playlist request. PlaylistId={PlaylistId}, UserId={UserId}", 
+            id, requestedBy);
+        
+        var playlist = await _db.Playlists.FirstOrDefaultAsync(p => p.Id == id);
+        
+        if (playlist == null)
+        {
+            _logger.LogWarning("[Warn] Playlist not found for update. PlaylistId={PlaylistId}", id);
+            throw new KeyNotFoundException("Playlist not found");
+        }
+        
+        // Rights validation: only owner can update playlist
+        if (playlist.IdUser.ToString() != requestedBy && !IsAdmin(requestedBy))
+        {
+            _logger.LogWarning("[Warn] Unauthorized update attempt. PlaylistId={PlaylistId}, OwnerId={OwnerId}, RequestedBy={UserId}", 
+                id, playlist.IdUser, requestedBy);
+            throw new UnauthorizedAccessException("You can only edit your own playlists");
+        }
+        
+        // Name validation after update
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+        {
+            if (dto.Name.Length > 200)
+            {
+                _logger.LogWarning("[Warn] New playlist name too long. Length={Length}", dto.Name.Length);
+                throw new ArgumentException("Playlist name is too long");
+            }
+            playlist.Name = dto.Name;
+        }
+        
+        TypesAccess? type = _db.TypesAccesses.FirstOrDefault(p => p.Id == dto.IdAccessType);
+
+        if (type == null)
+        {
+            _logger.LogWarning("[Warn] Type not found. PlaylistId={PlaylistId}", id);
+            throw new KeyNotFoundException("Playlist type not found");
+        }
+        
+        if (dto.Description != null)
+            playlist.Description = dto.Description;
+        
+        playlist.IdAccessType = dto.IdAccessType;
+        playlist.UpdatedAt = DateTime.UtcNow;
+        
+        _db.Playlists.Update(playlist);
+        await _db.SaveChangesAsync();
+        
+        _logger.LogInformation("[Info] Playlist updated successfully. PlaylistId={PlaylistId}", id);
+        return _mapper.Map<PlaylistInfoDto>(playlist);
     }
 
-    public Task<List<PlaylistInfoDto>> GetListBySearchAsync(string search)
+    public async Task DeleteAsync(long id, string requestedBy)
     {
-        throw new NotImplementedException();
+        _logger.LogInformation("[Info] Delete playlist request. PlaylistId={PlaylistId}, UserId={UserId}", 
+            id, requestedBy);
+        
+        var playlist = await _db.Playlists.FirstOrDefaultAsync(p => p.Id == id);
+        
+        if (playlist == null)
+        {
+            _logger.LogWarning("[Warn] Playlist not found for deletion. PlaylistId={PlaylistId}", id);
+            throw new KeyNotFoundException("Playlist not found");
+        }
+        
+        // Rights validation: only owner can delete playlist
+        if (playlist.IdUser.ToString() != requestedBy && !IsAdmin(requestedBy))
+        {
+            _logger.LogWarning("[Warn] Unauthorized delete attempt. PlaylistId={PlaylistId}, OwnerId={OwnerId}, RequestedBy={UserId}", 
+                id, playlist.IdUser, requestedBy);
+            throw new UnauthorizedAccessException("You can only delete your own playlists");
+        }
+        
+        // Delete linked records (tracks, saves)
+        await _db.PlaylistsTracks.Where(pt => pt.IdPlaylist == id).ExecuteDeleteAsync();
+        await _db.SavedPlaylists.Where(sp => sp.IdPlaylist == id).ExecuteDeleteAsync();
+        
+        _db.Playlists.Remove(playlist);
+        await _db.SaveChangesAsync();
+        
+        _logger.LogInformation("[Info] Playlist deleted successfully. PlaylistId={PlaylistId}", id);
     }
 
-    public Task<List<PlaylistInfoDto>> GetListSavedAsync(long userId)
+    public async Task<List<PlaylistInfoDto>> GetListByUserIdAsync(long userId)
     {
-        throw new NotImplementedException();
+        _logger.LogDebug("[Debug] Get playlists by owner. OwnerId={OwnerId}", userId);
+        
+        var playlists = await _db.Playlists
+            .AsNoTracking()
+            .Where(x => x.IdUser == userId)
+            .OrderByDescending(x => x.UpdatedAt)
+            .ToListAsync();
+        
+        var result = _mapper.Map<List<PlaylistInfoDto>>(playlists);
+        
+        _logger.LogInformation("[Info] Retrieved {Count} playlists for owner. OwnerId={OwnerId}", 
+            result.Count, userId);
+        return result;
     }
 
-    public Task SavePlaylistAsync(long idUser, long idPlaylist)
+    public async Task<List<PlaylistInfoDto>> SearchAsync(long excludeUserId, string query, int limit = 50)
     {
-        throw new NotImplementedException();
+        _logger.LogDebug("[Debug] Search public playlists. Query={Query}, ExcludeUserId={UserId}, Limit={Limit}", 
+            query, excludeUserId, limit);
+        
+        if (string.IsNullOrWhiteSpace(query))
+            return new List<PlaylistInfoDto>();
+        short? idAccessType = _db.TypesAccesses.FirstOrDefault(x => x.TypeName == "Admin").Id;
+        
+        List<Playlist> playlists = await _db.Playlists
+            .AsNoTracking()
+            .Where(x => 
+                EF.Functions.Like(x.Name, $"%{query}%") &&
+                x.IdAccessType == idAccessType &&
+                x.IdUser != excludeUserId)
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(limit)
+            .ToListAsync();
+        
+        var result = _mapper.Map<List<PlaylistInfoDto>>(playlists);
+        
+        _logger.LogInformation("[Info] Search completed. Query={Query}, Found={Count}", query, result.Count);
+        return result;
     }
 
-    public Task UnsavePlaylistAsync(long idUser, long idPlaylist)
+    public async Task<List<PlaylistInfoDto>> GetListSavedAsync(long userId)
     {
-        throw new NotImplementedException();
+        _logger.LogDebug("[Debug] Get saved playlists for user. UserId={UserId}", userId);
+        
+        List<Playlist> playlists = await _db.SavedPlaylists
+            .AsNoTracking()
+            .Where(x => x.IdUser == userId)
+            .Select(x => x.IdPlaylistNavigation)
+            .ToListAsync();
+        
+        var result = _mapper.Map<List<PlaylistInfoDto>>(playlists);
+        
+        _logger.LogInformation("[Info] Retrieved {Count} saved playlists. UserId={UserId}", 
+            result.Count, userId);
+        return result;
+    }
+
+    public async Task SavePlaylistAsync(long userId, long playlistId)
+    {
+        _logger.LogInformation("[Info] Save playlist request. UserId={UserId}, PlaylistId={PlaylistId}", 
+            userId, playlistId);
+        
+        // Exist validation
+        var playlistExists = await _db.Playlists.AnyAsync(p => p.Id == playlistId);
+        if (!playlistExists)
+        {
+            _logger.LogWarning("[Warn] Playlist not found for save. PlaylistId={PlaylistId}", playlistId);
+            throw new KeyNotFoundException("Playlist not found");
+        }
+        
+        // Check: user can't save his own playlist
+        if (userId == await _db.Playlists.Where(p => p.Id == playlistId).Select(p => p.IdUser).FirstOrDefaultAsync())
+        {
+            _logger.LogWarning("[Warn] User attempted to save own playlist. UserId={UserId}, PlaylistId={PlaylistId}", 
+                userId, playlistId);
+            throw new InvalidOperationException("Cannot save your own playlist");
+        }
+        
+        // Duplicate validation
+        var existing = await _db.SavedPlaylists
+            .AnyAsync(p => p.IdPlaylist == playlistId && p.IdUser == userId);
+        
+        if (existing)
+        {
+            _logger.LogWarning("[Warn] Playlist already saved. UserId={UserId}, PlaylistId={PlaylistId}", 
+                userId, playlistId);
+            throw new InvalidOperationException("Playlist already saved");
+        }
+
+        var savedPlaylist = new SavedPlaylist
+        {
+            IdUser = userId,
+            IdPlaylist = playlistId
+        };
+        
+        await _db.SavedPlaylists.AddAsync(savedPlaylist);
+        await _db.SaveChangesAsync();
+        
+        _logger.LogInformation("[Info] Playlist saved successfully. UserId={UserId}, PlaylistId={PlaylistId}", 
+            userId, playlistId);
+    }
+
+    public async Task UnsavePlaylistAsync(long userId, long playlistId)
+    {
+        _logger.LogInformation("[Info] Unsave playlist request. UserId={UserId}, PlaylistId={PlaylistId}", 
+            userId, playlistId);
+        
+       SavedPlaylist? savedPlaylist = await _db.SavedPlaylists
+            .FirstOrDefaultAsync(p => p.IdPlaylist == playlistId && p.IdUser == userId);
+        
+        if (savedPlaylist == null)
+        {
+            _logger.LogWarning("[Warn] Saved playlist not found. UserId={UserId}, PlaylistId={PlaylistId}", 
+                userId, playlistId);
+            throw new InvalidOperationException("Playlist not in saved list");
+        }
+        
+        _db.SavedPlaylists.Remove(savedPlaylist);
+        await _db.SaveChangesAsync();
+        
+        _logger.LogInformation("[Info] Playlist unsaved successfully. UserId={UserId}, PlaylistId={PlaylistId}", 
+            userId, playlistId);
+    }
+    
+    // Helper: проверка на админа (заглушка)
+    private bool IsAdmin(string userId)
+    {
+        // TODO: Реализовать проверку роли через _userManager.IsInRoleAsync или кэш
+        return false;
     }
 }

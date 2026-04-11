@@ -8,6 +8,8 @@ public class CreateTrackDto
 
     public IFormFile TrackFile { get; set; } = null!;
     
+    public List<UserInfoDto> Authors { get; set; }
+    
     public string? PaceName { get; set; }
 
     public string? MoodName { get; set; }

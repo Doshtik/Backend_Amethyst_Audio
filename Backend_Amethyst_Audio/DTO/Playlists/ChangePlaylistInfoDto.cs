@@ -1,12 +1,12 @@
 namespace Backend_Amethyst_Audio.DTO;
 
-public class ChagnePlaylistInfoDto
+public class ChangePlaylistInfoDto
 {
-    public short? AccessTypeName { get; set; }
+    public short IdAccessType { get; set; }
 
     public string? Name { get; set; }
 
-    public string? Discription { get; set; }
+    public string? Description { get; set; }
 
     public IFormFile? CoverFile { get; set; }
     

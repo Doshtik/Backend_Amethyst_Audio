@@ -1,6 +1,7 @@
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Models;
 using Backend_Amethyst_Audio.Services.Abstractions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend_Amethyst_Audio.Controllers;
@@ -12,8 +13,39 @@ public class TracksController : ControllerBase
     private ITrackService _trackService;
     
     public TracksController(ITrackService trackService) => _trackService = trackService;
+    
+    [HttpGet("{trackId}")]
+    [Authorize]
+    public async Task<IActionResult> GetById(long trackId)
+    {
+        try
+        {
+            TrackInfoDto dto = await _trackService.GetByIdAsync(trackId);
+            return Ok(dto);
+        }
+        catch (Exception e)
+        {
+            return  StatusCode(500, e.Message);
+        }
+    }
+    
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetAll()
+    {
+        try
+        {
+            List<TrackInfoDto> listDto = await _trackService.GetAllAsync();
+            return Ok(listDto);
+        }
+        catch (Exception e)
+        {
+            return  StatusCode(500, e.Message);
+        }
+    }
 
-    [HttpPost("")]
+    [HttpPost]
+    [Authorize]
     public async Task<IActionResult> CreateTrack([FromBody] CreateTrackDto dto)
     {
         try
@@ -30,22 +62,17 @@ public class TracksController : ControllerBase
             return StatusCode(500, e.Message);
         }
     }
-    
-    [HttpGet("{trackId}")]
-    public async Task<IActionResult> GetTrack(long trackId)
-    {
-        TrackInfoDto dto;
-        throw new NotImplementedException();
-    }
 
-    [HttpPut("{trackId}")]
-    public async Task<IActionResult> UpdateTrack(long trackId, [FromBody] ChangeTrackInfoDto dto)
+    [HttpPut]
+    [Authorize]
+    public async Task<IActionResult> UpdateTrack([FromBody] ChangeTrackInfoDto dto)
     {
-        TrackInfoDto  newTrackInfoDto = await _trackService.UpdateAsync(dto);
+        TrackInfoDto newTrackInfoDto = await _trackService.UpdateAsync(dto);
         throw new NotImplementedException();
     }
 
     [HttpDelete]
+    [Authorize]
     public async Task<IActionResult> DeleteTrack(long trackId)
     {
         try

@@ -13,7 +13,7 @@ public class CreatePlaylistDto
     [Required]
     public string Name { get; set; }
 
-    public string? Discription { get; set; }
+    public string? Description { get; set; }
 
     public IFormFile? CoverFile { get; set; }
 }

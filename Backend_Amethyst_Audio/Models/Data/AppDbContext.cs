@@ -337,7 +337,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_at");
-            entity.Property(e => e.Discription).HasColumnName("discription");
+            entity.Property(e => e.Description).HasColumnName("discription");
             entity.Property(e => e.IdAccessType).HasColumnName("id_access_type");
             entity.Property(e => e.IdUser).HasColumnName("id_user");
             entity.Property(e => e.Name).HasColumnName("name");

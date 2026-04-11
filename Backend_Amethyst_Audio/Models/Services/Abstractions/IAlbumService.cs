@@ -1,21 +1,22 @@
+using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Models.Entities;
 
 namespace Backend_Amethyst_Audio.Services.Abstractions;
 
 public interface IAlbumService
 {
-    Task<Album> GetByIdAsync(long id);
-    Task<List<Album>> GetAllAsync();
+    Task<AlbumInfoDto> GetByIdAsync(long id);
+    Task<List<AlbumInfoDto>> GetAllAsync();
     
-    Task CreateAsync(Album album);
-    Task UpdateAsync(Album album);
+    Task CreateAsync(CreateAlbumDto album);
+    Task UpdateAsync(ChangeAlbumInfoDto album);
     Task DeleteAsync(long id);
 
-    Task<List<Album>> GetListOfNewestAsync();
+    Task<List<AlbumInfoDto>> GetListOfNewestAsync();
     
-    Task<List<Album>> GetListBySearchAsync(string search);
-    Task<List<Album>> GetListByUserIdAsync(long userId);
-    Task<List<Album>> GetListSavedAsync(long userId);
+    Task<List<AlbumInfoDto>> GetListBySearchAsync(string search);
+    Task<List<AlbumInfoDto>> GetListByUserIdAsync(long userId);
+    Task<List<AlbumInfoDto>> GetListSavedAsync(long userId);
     
     Task SaveAlbumAsync(long idUser, long idAlbum);
     Task UnsaveAlbumAsync(long idUser, long idAlbum);

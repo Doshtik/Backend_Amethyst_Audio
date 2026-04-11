@@ -21,7 +21,6 @@ public class TokenService : ITokenService
 
     public string GenerateJwtToken(User user)
     {
-        // Создание тела токена
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),

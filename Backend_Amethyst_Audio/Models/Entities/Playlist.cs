@@ -13,7 +13,7 @@ public partial class Playlist
 
     public string Name { get; set; } = null!;
 
-    public string? Discription { get; set; }
+    public string? Description { get; set; }
 
     public string? CoverFileName { get; set; }
 
