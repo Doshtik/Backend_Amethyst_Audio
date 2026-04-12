@@ -8,8 +8,8 @@ public interface IAlbumService
     Task<AlbumInfoDto> GetByIdAsync(long id);
     Task<List<AlbumInfoDto>> GetAllAsync();
     
-    Task CreateAsync(CreateAlbumDto album);
-    Task UpdateAsync(ChangeAlbumInfoDto album);
+    Task<AlbumInfoDto> CreateAsync(CreateAlbumDto album);
+    Task<AlbumInfoDto> UpdateAsync(ChangeAlbumInfoDto album);
     Task DeleteAsync(long id);
 
     Task<List<AlbumInfoDto>> GetListOfNewestAsync();

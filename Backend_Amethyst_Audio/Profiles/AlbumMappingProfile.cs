@@ -2,5 +2,5 @@ namespace Backend_Amethyst_Audio.Profiles;
 
 public class AlbumMappingProfile
 {
-    
+    // TODO: сделать маппинг альбомов
 }

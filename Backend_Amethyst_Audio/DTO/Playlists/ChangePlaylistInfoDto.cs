@@ -2,7 +2,7 @@ namespace Backend_Amethyst_Audio.DTO;
 
 public class ChangePlaylistInfoDto
 {
-    public short IdAccessType { get; set; }
+    public bool IsPublic { get; set; }
 
     public string? Name { get; set; }
 

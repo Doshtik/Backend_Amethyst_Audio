@@ -64,8 +64,6 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<TracksGenre> TracksGenres { get; set; }
 
-    public virtual DbSet<TypesAccess> TypesAccesses { get; set; }
-
     public virtual DbSet<TypesNotification> TypesNotifications { get; set; }
 
     public virtual DbSet<TypesReport> TypesReports { get; set; }
@@ -75,10 +73,6 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<UsersHistory> UsersHistories { get; set; }
 
     public virtual DbSet<UsersSub> UsersSubs { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=amethyst_audio_db;Username=postgres;Password=1111;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -337,17 +331,13 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_at");
-            entity.Property(e => e.Description).HasColumnName("discription");
-            entity.Property(e => e.IdAccessType).HasColumnName("id_access_type");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.IsPublic).HasColumnName("is_public");
             entity.Property(e => e.IdUser).HasColumnName("id_user");
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("updated_at");
-
-            entity.HasOne(d => d.IdAccessTypeNavigation).WithMany(p => p.Playlists)
-                .HasForeignKey(d => d.IdAccessType)
-                .HasConstraintName("fk_playlists_id_access_type");
 
             entity.HasOne(d => d.IdUserNavigation).WithMany(p => p.Playlists)
                 .HasForeignKey(d => d.IdUser)
@@ -569,17 +559,6 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.IdTrack)
                 .HasConstraintName("fk_track_genres_id_track");
         });
-
-        modelBuilder.Entity<TypesAccess>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("pk_types_access_id");
-
-            entity.ToTable("types_access", "collections");
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.TypeName).HasColumnName("type_name");
-        });
-
         modelBuilder.Entity<TypesNotification>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_types_notifications_id");

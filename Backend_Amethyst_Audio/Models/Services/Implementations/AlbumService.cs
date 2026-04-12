@@ -1,13 +1,34 @@
+using AutoMapper;
 using Backend_Amethyst_Audio.DTO;
+using Backend_Amethyst_Audio.Models.Data;
+using Backend_Amethyst_Audio.Models.Entities;
 using Backend_Amethyst_Audio.Services.Abstractions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend_Amethyst_Audio.Services.Implementations;
 
 public class AlbumService : IAlbumService
 {
-    public Task<AlbumInfoDto> GetByIdAsync(long id)
+    private readonly AppDbContext _db;
+    private readonly ILogger<AlbumService> _logger;
+    private readonly IMapper _mapper;
+    public AlbumService(AppDbContext db, ILogger<AlbumService> logger, IMapper mapper)
     {
-        throw new NotImplementedException();
+        _db = db;
+        _logger = logger;
+        _mapper = mapper;
+    }
+    public async Task<AlbumInfoDto> GetByIdAsync(long id)
+    {
+        Album? album = await _db.Albums.FirstOrDefaultAsync(x => x.Id == id);
+
+        if (album is null)
+        {
+            _logger.LogError("Album Not Found");
+            throw new KeyNotFoundException($"Album Not Found: {id}");
+        }
+        
+        return _mapper.Map<AlbumInfoDto>(album);
     }
 
     public Task<List<AlbumInfoDto>> GetAllAsync()
@@ -15,12 +36,12 @@ public class AlbumService : IAlbumService
         throw new NotImplementedException();
     }
 
-    public Task CreateAsync(CreateAlbumDto album)
+    public async Task<AlbumInfoDto> CreateAsync(CreateAlbumDto album)
     {
         throw new NotImplementedException();
     }
 
-    public Task UpdateAsync(ChangeAlbumInfoDto album)
+    public async Task<AlbumInfoDto> UpdateAsync(ChangeAlbumInfoDto album)
     {
         throw new NotImplementedException();
     }

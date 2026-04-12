@@ -1,5 +1,6 @@
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Services.Abstractions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend_Amethyst_Audio.Controllers;
@@ -17,6 +18,7 @@ public class AlbumsController : ControllerBase
     }
     
     [HttpGet("{albumId}")]
+    [Authorize]
     public async Task<IActionResult> GetById(long albumId)
     {
         try
@@ -26,31 +28,67 @@ public class AlbumsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ex);
+            return StatusCode(500, ex.Message);
         }
     }
     
     [HttpGet("")]
+    [Authorize]
     public async Task<IActionResult> GetAll()
     {
-        throw new NotImplementedException();
+        try
+        {
+            List<AlbumInfoDto> albums = await _albumService.GetAllAsync();
+            return Ok(albums);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
     }
     
     [HttpPost("")]
-    public async Task<IActionResult> Create()
+    [Authorize]
+    public async Task<IActionResult> Create([FromBody] CreateAlbumDto dto)
     {
-        throw new NotImplementedException();
+        try
+        {
+            AlbumInfoDto album = await _albumService.CreateAsync(dto);
+            return Ok(album);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
     }
     
     [HttpPut("")]
-    public async Task<IActionResult> Update()
+    [Authorize]
+    public async Task<IActionResult> Update([FromBody] ChangeAlbumInfoDto dto)
     {
-        throw new NotImplementedException();
+        try
+        {
+            AlbumInfoDto album = await _albumService.UpdateAsync(dto);
+            return Ok(album);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
     }
     
-    [HttpDelete("")]
-    public async Task<IActionResult> Delete()
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<IActionResult> Delete(long id)
     {
-        throw new NotImplementedException();
+        try
+        {
+            await _albumService.DeleteAsync(id);
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
     }
 }

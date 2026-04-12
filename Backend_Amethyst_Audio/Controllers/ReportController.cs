@@ -1,6 +1,10 @@
+using Microsoft.AspNetCore.Mvc;
+
 namespace Backend_Amethyst_Audio.Controllers;
 
-public class ReportController
+[ApiController]
+[Route("api/[controller]")]
+public class ReportController : ControllerBase
 {
     
 }

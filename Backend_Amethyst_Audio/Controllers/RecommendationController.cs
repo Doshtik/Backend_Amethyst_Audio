@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend_Amethyst_Audio.Controllers;
 
 [ApiController]
-[Route("api/[controller]")] // → api/Recommendation
+[Route("api/[controller]")]
 public class RecommendationController : ControllerBase
 {
     private readonly ITrackService _trackService;

@@ -120,18 +120,10 @@ public class PlaylistService : IPlaylistService
             playlist.Name = dto.Name;
         }
         
-        TypesAccess? type = _db.TypesAccesses.FirstOrDefault(p => p.Id == dto.IdAccessType);
-
-        if (type == null)
-        {
-            _logger.LogWarning("[Warn] Type not found. PlaylistId={PlaylistId}", id);
-            throw new KeyNotFoundException("Playlist type not found");
-        }
-        
         if (dto.Description != null)
             playlist.Description = dto.Description;
         
-        playlist.IdAccessType = dto.IdAccessType;
+        playlist.IsPublic = dto.IsPublic;
         playlist.UpdatedAt = DateTime.UtcNow;
         
         _db.Playlists.Update(playlist);
@@ -196,13 +188,12 @@ public class PlaylistService : IPlaylistService
         
         if (string.IsNullOrWhiteSpace(query))
             return new List<PlaylistInfoDto>();
-        short? idAccessType = _db.TypesAccesses.FirstOrDefault(x => x.TypeName == "Admin").Id;
         
         List<Playlist> playlists = await _db.Playlists
             .AsNoTracking()
             .Where(x => 
                 EF.Functions.Like(x.Name, $"%{query}%") &&
-                x.IdAccessType == idAccessType &&
+                x.IsPublic &&
                 x.IdUser != excludeUserId)
             .OrderByDescending(x => x.CreatedAt)
             .Take(limit)

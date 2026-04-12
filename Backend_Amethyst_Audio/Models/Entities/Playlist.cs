@@ -9,7 +9,7 @@ public partial class Playlist
 
     public long IdUser { get; set; }
 
-    public short IdAccessType { get; set; }
+    public bool IsPublic { get; set; }
 
     public string Name { get; set; } = null!;
 
@@ -20,8 +20,6 @@ public partial class Playlist
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
-
-    public virtual TypesAccess IdAccessTypeNavigation { get; set; } = null!;
 
     public virtual User IdUserNavigation { get; set; } = null!;
 
