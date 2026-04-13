@@ -2,7 +2,7 @@ namespace Backend_Amethyst_Audio.DTO;
 
 public class ChangeTrackInfoDto
 {
-    public int Id { get; set; }
+    public long Id { get; set; }
     
     public string? Name { get; set; }
 

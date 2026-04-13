@@ -3,6 +3,7 @@ using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.DTO.Pages;
 using Backend_Amethyst_Audio.Models.Data;
 using Backend_Amethyst_Audio.Models.Entities;
+using Backend_Amethyst_Audio.Models.Enums;
 using Backend_Amethyst_Audio.Profiles;
 using Backend_Amethyst_Audio.Services.Abstractions;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -32,60 +33,72 @@ public class TracksService : ITrackService
 
     public async Task<TrackInfoDto> GetByIdAsync(long id)
     {
-        _logger.LogDebug("[Debug] Get track by Id. TrackId={TrackId}", id);
+        _logger.LogDebug("[Debug] Fetching track by ID: {TrackId}", id);
         
-        Track? track = await _db.Tracks
+        var track = await _db.Tracks
             .AsNoTracking()
             .FirstOrDefaultAsync(t => t.Id == id);
-        
-        if (track == null)
+
+        if (track is null)
         {
             _logger.LogWarning("[Warn] Track not found. TrackId={TrackId}", id);
             throw new KeyNotFoundException("Track not found");
         }
-        
+
         _logger.LogDebug("[Debug] Track retrieved successfully. TrackId={TrackId}", id);
         return _mapper.Map<TrackInfoDto>(track);
     }
 
     public async Task<List<TrackInfoDto>> GetAllAsync()
     {
-        _logger.LogDebug("[Debug] Get all tracks request");
+        _logger.LogDebug("[Debug] Fetching all tracks");
         
-        var tracks = await _db
-            .Tracks.AsNoTracking()
+        var tracks = await _db.Tracks
+            .AsNoTracking()
             .ToListAsync();
-        var result = _mapper.Map<List<TrackInfoDto>>(tracks);
         
-        _logger.LogInformation("[Info] Retrieved {Count} tracks", result.Count);
-        return result;
+        _logger.LogInformation("[Info] Retrieved {Count} tracks", tracks.Count);
+        return _mapper.Map<List<TrackInfoDto>>(tracks);
     }
 
     public async Task<TrackInfoDto> CreateAsync(CreateTrackDto dto)
     {
-        _logger.LogInformation("[Info] Creating new track. Title={Title}, AuthorsId={AuthorsId}", 
-            dto.Name, dto.Authors.Select(x => x.Id));
-        
+        _logger.LogInformation("[Info] Creating new track. Title={Title}, AuthorsCount={AuthorsCount}", dto.Name, dto.Authors?.Count ?? 0);
 
-        Track track = _mapper.Map<Track>(dto);
+        string trackFileName, coverFileName;
+        try
+        {
+            _logger.LogDebug("[Debug] Saving track audio file...");
+            trackFileName = await _mediaService.SaveFileAsync(dto.TrackFile, FileTypes.Tracks);
+
+            _logger.LogDebug("[Debug] Saving track cover file...");
+            coverFileName = await _mediaService.SaveFileAsync(dto.CoverFile, FileTypes.Covers);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Error] Failed to save media files for track '{Title}'", dto.Name);
+            throw new InvalidOperationException("Failed to upload media files. Database record was not created.", ex);
+        }
+
+        var track = _mapper.Map<Track>(dto);
         track.CreatedAt = DateTime.UtcNow;
+        track.UpdatedAt = DateTime.UtcNow;
         
+        track.TrackFileName = trackFileName;
+        track.CoverFileName = coverFileName;
+
         await _db.Tracks.AddAsync(track);
         await _db.SaveChangesAsync();
-        
-        //TODO: save files in AppData with MediaService
-        
-        _logger.LogInformation("[Info] Track created successfully. TrackId={TrackId}, Title={Title}", 
-            track.Id, track.Name);
-        
+
+        _logger.LogInformation("[Info] Track created successfully. TrackId={TrackId}, Title={Title}", track.Id, track.Name);
         return _mapper.Map<TrackInfoDto>(track);
     }
 
     public async Task<TrackInfoDto> UpdateAsync(ChangeTrackInfoDto dto)
     {
-        _logger.LogInformation("[Info] Updating track. TrackId={TrackId}", dto.Id);
-        
-        Track? track = await _db.Tracks.FirstOrDefaultAsync(t => t.Id == dto.Id);
+        _logger.LogDebug("[Debug] Updating track. TrackId={TrackId}", dto.Id);
+
+        var track = await _db.Tracks.FirstOrDefaultAsync(t => t.Id == dto.Id);
         if (track == null)
         {
             _logger.LogWarning("[Warn] Track not found for update. TrackId={TrackId}", dto.Id);
@@ -94,34 +107,76 @@ public class TracksService : ITrackService
 
         _mapper.Map(dto, track);
         track.UpdatedAt = DateTime.UtcNow;
-        
+
+        if (dto.TrackFile is not null)
+        {
+            _logger.LogDebug("[Debug] Updating track audio file. OldFile={OldFile}", track.TrackFileName);
+            try
+            {
+                if (!string.IsNullOrEmpty(track.TrackFileName))
+                    await _mediaService.DeleteFileAsync(track.TrackFileName);
+
+                var newFileName = await _mediaService.SaveFileAsync(dto.TrackFile, FileTypes.Tracks);
+                track.TrackFileName = newFileName;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Error] Failed to update track audio file. TrackId={TrackId}", track.Id);
+                throw new InvalidOperationException("Failed to update audio file.", ex);
+            }
+        }
+
+        if (dto.CoverFile is not null)
+        {
+            _logger.LogDebug("[Debug] Updating track cover file. OldFile={OldFile}", track.CoverFileName);
+            try
+            {
+                if (!string.IsNullOrEmpty(track.CoverFileName))
+                    await _mediaService.DeleteFileAsync(track.CoverFileName);
+
+                var newFileName = await _mediaService.SaveFileAsync(dto.CoverFile, FileTypes.Covers);
+                track.CoverFileName = newFileName;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Error] Failed to update track cover file. TrackId={TrackId}", track.Id);
+                throw new InvalidOperationException("Failed to update cover file.", ex);
+            }
+        }
+
         _db.Tracks.Update(track);
         await _db.SaveChangesAsync();
-        
-        //TODO: update files in AppData with MediaService
-        
+
         _logger.LogInformation("[Info] Track updated successfully. TrackId={TrackId}", track.Id);
         return _mapper.Map<TrackInfoDto>(track);
     }
 
     public async Task DeleteAsync(long id)
     {
-        _logger.LogInformation("[Info] Deleting track. TrackId={TrackId}", id);
-        
+        _logger.LogDebug("[Debug] Deleting track. TrackId={TrackId}", id);
+
         var track = await _db.Tracks.FirstOrDefaultAsync(t => t.Id == id);
-        if (track == null)
+        if (track is null)
         {
             _logger.LogWarning("[Warn] Track not found for deletion. TrackId={TrackId}", id);
             throw new KeyNotFoundException("Track not found");
         }
-        
-        // TODO: delete files from AppData with MediaService
-        // await _mediaService.DeleteFileAsync(track.TrackFileName);
-        // await _mediaService.DeleteFileAsync(track.CoverFileName);
-        
+
+        try
+        {
+            if (!string.IsNullOrEmpty(track.TrackFileName))
+                await _mediaService.DeleteFileAsync(track.TrackFileName);
+            
+            if (!string.IsNullOrEmpty(track.CoverFileName))
+                await _mediaService.DeleteFileAsync(track.CoverFileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[Warn] Failed to delete media files for track {TrackId}. Continuing with DB removal.", id);
+        }
+
         _db.Tracks.Remove(track);
         await _db.SaveChangesAsync();
-        
         _logger.LogInformation("[Info] Track deleted successfully. TrackId={TrackId}", id);
     }
 
@@ -161,7 +216,7 @@ public class TracksService : ITrackService
         var tracks = await _db.Tracks
             .AsNoTracking()
             .Where(x => EF.Functions.Like(x.Name, $"%{trackName}%"))
-            .Take(100) // Ограничение результатов для производительности
+            .Take(100)
             .ToListAsync();
         
         var result = _mapper.Map<List<TrackInfoDto>>(tracks);

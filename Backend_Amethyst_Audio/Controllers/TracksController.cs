@@ -10,81 +10,134 @@ namespace Backend_Amethyst_Audio.Controllers;
 [Route("api/[controller]")]
 public class TracksController : ControllerBase
 {
-    private ITrackService _trackService;
-    
-    public TracksController(ITrackService trackService) => _trackService = trackService;
-    
+    private readonly ITrackService _trackService;
+    private readonly ILogger<TracksController> _logger;
+
+    public TracksController(ITrackService trackService, ILogger<TracksController> logger)
+    {
+        _trackService = trackService;
+        _logger = logger;
+    }
+
     [HttpGet("{trackId}")]
     [Authorize]
     public async Task<IActionResult> GetById(long trackId)
     {
+        _logger.LogDebug("[Debug] Request to get track by ID: {TrackId}", trackId);
         try
         {
-            TrackInfoDto dto = await _trackService.GetByIdAsync(trackId);
+            var dto = await _trackService.GetByIdAsync(trackId);
+            _logger.LogInformation("[Info] Successfully retrieved track {TrackId}", trackId);
             return Ok(dto);
         }
-        catch (Exception e)
+        catch (KeyNotFoundException)
         {
-            return  StatusCode(500, e.Message);
+            _logger.LogWarning("[Warn] Track {TrackId} not found", trackId);
+            return NotFound(new { message = "Track not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Error] Unexpected error retrieving track {TrackId}", trackId);
+            return Problem(statusCode: 500, title: "Internal Server Error", detail: "An error occurred while processing your request.");
         }
     }
-    
+
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> GetAll()
     {
+        _logger.LogDebug("[Debug] Request to get all tracks");
         try
         {
-            List<TrackInfoDto> listDto = await _trackService.GetAllAsync();
+            var listDto = await _trackService.GetAllAsync();
+            _logger.LogInformation("[Info] Successfully retrieved {Count} tracks", listDto.Count);
             return Ok(listDto);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            return  StatusCode(500, e.Message);
+            _logger.LogError(ex, "[Error] Unexpected error retrieving all tracks");
+            return Problem(statusCode: 500, title: "Internal Server Error", detail: "An error occurred while processing your request.");
         }
     }
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateTrack([FromBody] CreateTrackDto dto)
+    public async Task<IActionResult> CreateTrack([FromForm] CreateTrackDto dto)
     {
+        _logger.LogDebug("[Debug] Request to create track. Title={Title}", dto.Name);
         try
         {
-            TrackInfoDto result = await _trackService.CreateAsync(dto);
-            return CreatedAtAction(nameof(CreateTrack), new { id = result.Id }, result);
+            var result = await _trackService.CreateAsync(dto);
+            _logger.LogInformation("[Info] Successfully created track {TrackId}", result.Id);
+            return CreatedAtAction(nameof(GetById), new { trackId = result.Id }, result);
         }
-        catch (BadHttpRequestException e)
+        catch (ArgumentException ex)
         {
-            return BadRequest(e.Message);
+            _logger.LogWarning("[Warn] Validation failed for track creation: {Message}", ex.Message);
+            return BadRequest(new { message = ex.Message });
         }
-        catch (Exception e)
+        catch (InvalidOperationException ex)
         {
-            return StatusCode(500, e.Message);
+            _logger.LogWarning("[Warn] Operation failed during track creation: {Message}", ex.Message);
+            return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Error] Unexpected error creating track '{Title}'", dto.Name);
+            return Problem(statusCode: 500, title: "Internal Server Error", detail: "An error occurred while processing your request.");
         }
     }
 
-    [HttpPut]
+    [HttpPut("{trackId}")]
     [Authorize]
-    public async Task<IActionResult> UpdateTrack([FromBody] ChangeTrackInfoDto dto)
+    public async Task<IActionResult> UpdateTrack(long trackId, [FromForm] ChangeTrackInfoDto dto)
     {
-        TrackInfoDto newTrackInfoDto = await _trackService.UpdateAsync(dto);
-        throw new NotImplementedException();
+        dto.Id = trackId;
+        
+        _logger.LogDebug("[Debug] Request to update track. TrackId={TrackId}", trackId);
+        try
+        {
+            var result = await _trackService.UpdateAsync(dto);
+            _logger.LogInformation("[Info] Successfully updated track {TrackId}", trackId);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            _logger.LogWarning("[Warn] Track {TrackId} not found for update", trackId);
+            return NotFound(new { message = "Track not found" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning("[Warn] Operation failed during track update: {Message}", ex.Message);
+            return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Error] Unexpected error updating track {TrackId}", trackId);
+            return Problem(statusCode: 500, title: "Internal Server Error", detail: "An error occurred while processing your request.");
+        }
     }
 
-    [HttpDelete]
+    [HttpDelete("{trackId}")]
     [Authorize]
     public async Task<IActionResult> DeleteTrack(long trackId)
     {
+        _logger.LogDebug("[Debug] Request to delete track. TrackId={TrackId}", trackId);
         try
         {
             await _trackService.DeleteAsync(trackId);
+            _logger.LogInformation("[Info] Successfully deleted track {TrackId}", trackId);
             return NoContent();
         }
-        catch
+        catch (KeyNotFoundException)
         {
-            return StatusCode(500);
+            _logger.LogWarning("[Warn] Track {TrackId} not found for deletion", trackId);
+            return NotFound(new { message = "Track not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Error] Unexpected error deleting track {TrackId}", trackId);
+            return Problem(statusCode: 500, title: "Internal Server Error", detail: "An error occurred while processing your request.");
         }
     }
-    
-    
 }
