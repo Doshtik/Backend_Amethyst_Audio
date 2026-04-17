@@ -181,7 +181,7 @@ public class PlaylistService : IPlaylistService
         return result;
     }
 
-    public async Task<List<PlaylistInfoDto>> SearchAsync(long excludeUserId, string query, int limit = 50)
+    public async Task<List<PlaylistInfoDto>> GetListByPlaylistNameAsync(long excludeUserId, string query, int limit = 50)
     {
         _logger.LogDebug("[Debug] Search public playlists. Query={Query}, ExcludeUserId={UserId}, Limit={Limit}", 
             query, excludeUserId, limit);
@@ -220,6 +220,71 @@ public class PlaylistService : IPlaylistService
         _logger.LogInformation("[Info] Retrieved {Count} saved playlists. UserId={UserId}", 
             result.Count, userId);
         return result;
+    }
+
+    public async Task AddInPlaylistAsync(long trackId, long playlistId)
+    {
+        _logger.LogInformation("[Info] Add track to playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+            trackId, playlistId);
+        
+        bool isTrackExists = await _db.Tracks.AnyAsync(t => t.Id == trackId);
+        if (!isTrackExists)
+        {
+            _logger.LogWarning("[Warn] Track not found for playlist addition. TrackId={TrackId}", trackId);
+            throw new KeyNotFoundException("Track not found");
+        }
+        
+        bool isPlaylistExists = await _db.Playlists.AnyAsync(p => p.Id == playlistId);
+        if (!isPlaylistExists)
+        {
+            _logger.LogWarning("[Warn] Playlist not found for track addition. PlaylistId={PlaylistId}", playlistId);
+            throw new KeyNotFoundException("Playlist not found");
+        }
+        
+        bool isExisting = await _db.PlaylistsTracks
+            .AnyAsync(x => x.IdTrack == trackId && x.IdPlaylist == playlistId);
+        
+        if (isExisting)
+        {
+            _logger.LogWarning("[Warn] Track already in playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+                trackId, playlistId);
+            throw new InvalidOperationException("Track already exists in playlist");
+        }
+
+        var playlistTrack = new PlaylistsTrack
+        {
+            IdTrack = trackId,
+            IdPlaylist = playlistId,
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        await _db.PlaylistsTracks.AddAsync(playlistTrack);
+        await _db.SaveChangesAsync();
+        
+        _logger.LogInformation("[Info] Track added to playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+            trackId, playlistId);
+    }
+
+    public async Task RemoveFromPlaylistAsync(long trackId, long playlistId)
+    {
+        _logger.LogInformation("[Info] Remove track from playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+            trackId, playlistId);
+        
+        PlaylistsTrack? playlistTrack = await _db.PlaylistsTracks
+            .FirstOrDefaultAsync(x => x.IdTrack == trackId && x.IdPlaylist == playlistId);
+        
+        if (playlistTrack == null)
+        {
+            _logger.LogWarning("[Warn] Track not found in playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+                trackId, playlistId);
+            throw new KeyNotFoundException("Track not found in playlist");
+        }
+        
+        _db.PlaylistsTracks.Remove(playlistTrack);
+        await _db.SaveChangesAsync();
+        
+        _logger.LogInformation("[Info] Track removed from playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
+            trackId, playlistId);
     }
 
     public async Task SavePlaylistAsync(long userId, long playlistId)

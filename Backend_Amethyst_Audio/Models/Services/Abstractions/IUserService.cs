@@ -13,7 +13,7 @@ public interface IUserService
     Task ChangePasswordAsync(long id, ChangeUserPasswordDto dto);
     Task DeleteAsync(long id);
     
-    Task<UserInfoDto> GetByNicknameAsync(string nickname);
+    Task<List<UserInfoDto>> GetListByNicknameAsync(string nickname);
     
     Task<int> GetListenersAmountAsync(long id);
     

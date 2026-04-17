@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Entities;
 using Backend_Amethyst_Audio.Services.Abstractions;
@@ -21,7 +22,7 @@ public class AlbumsController : ControllerBase
 
     [HttpGet("{albumId}")]
     [Authorize]
-    public async Task<IActionResult> GetById(long albumId)
+    public async Task<IActionResult> GetByIdAsync(long albumId)
     {
         _logger.LogDebug("[Debug] Request to get album by ID: {AlbumId}", albumId);
         try
@@ -44,7 +45,7 @@ public class AlbumsController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAllAsync()
     {
         _logger.LogDebug("[Debug] Request to get all albums");
         try
@@ -60,16 +61,40 @@ public class AlbumsController : ControllerBase
         }
     }
 
+    [HttpGet("user/{userId}")]
+    [Authorize]
+    public async Task<IActionResult> GetByUserIdAsync(long userId)
+    {
+        var currentUserId = long.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
+        
+        try
+        {
+            _logger.LogDebug("[Debug] Get list of albums by user id. TargetUserId={UserId}, RequestedBy={CurrentUserId}", 
+                userId, currentUserId);
+            
+            List<AlbumInfoDto> albums = await _albumService.GetListByUserIdAsync(userId);
+            
+            _logger.LogInformation("[Info] Retrieved {Count} albums for user. UserId={UserId}", 
+                albums.Count, userId);
+            return Ok(albums);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Error] Failed to get user albums. UserId={UserId}", userId);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> Create([FromBody] CreateAlbumDto dto)
+    public async Task<IActionResult> CreateAsync([FromBody] CreateAlbumDto dto)
     {
         _logger.LogDebug("[Debug] Request to create a new album. DTO: {@Dto}", dto);
         try
         {
             var album = await _albumService.CreateAsync(dto);
             _logger.LogInformation("[Info] Successfully created album {AlbumId}", album.Id);
-            return CreatedAtAction(nameof(GetById), new { albumId = album.Id }, album);
+            return CreatedAtAction(nameof(CreateAsync), new { albumId = album.Id }, album);
         }
         catch (Exception ex)
         {
@@ -80,7 +105,7 @@ public class AlbumsController : ControllerBase
 
     [HttpPut]
     [Authorize]
-    public async Task<IActionResult> Update([FromBody] ChangeAlbumInfoDto dto)
+    public async Task<IActionResult> UpdateAsync([FromBody] ChangeAlbumInfoDto dto)
     {
         _logger.LogDebug("[Debug] Request to update album. DTO: {@Dto}", dto);
         try
@@ -98,7 +123,7 @@ public class AlbumsController : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize]
-    public async Task<IActionResult> Delete(long id)
+    public async Task<IActionResult> DeleteAsync(long id)
     {
         _logger.LogDebug("[Debug] Request to delete album {AlbumId}", id);
         try
@@ -121,7 +146,7 @@ public class AlbumsController : ControllerBase
 
     [HttpPost("save/{idUser}/{idAlbum}")]
     [Authorize]
-    public async Task<IActionResult> SaveAlbum(long idUser, long idAlbum)
+    public async Task<IActionResult> SaveAlbumAsync(long idUser, long idAlbum)
     {
         _logger.LogDebug("[Debug] Request to save album {AlbumId} for user {UserId}", idAlbum, idUser);
         try
@@ -144,7 +169,7 @@ public class AlbumsController : ControllerBase
 
     [HttpDelete("save/{idUser}/{idAlbum}")]
     [Authorize]
-    public async Task<IActionResult> UnsaveAlbum(long idUser, long idAlbum)
+    public async Task<IActionResult> UnsaveAlbumAsync(long idUser, long idAlbum)
     {
         _logger.LogDebug("[Debug] Request to unsave album {AlbumId} for user {UserId}", idAlbum, idUser);
         try

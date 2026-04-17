@@ -19,28 +19,8 @@ public class ProfilesController : ControllerBase
         _logger = logger;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        try
-        {
-            _logger.LogInformation("[Info] Get all users request. RequestedBy={UserId}", 
-                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "anonymous");
-            
-            List<UserInfoDto> listDto = await _userService.GetAllAsync();
-            
-            _logger.LogInformation("[Info] Retrieved {Count} users", listDto.Count);
-            return Ok(listDto);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Error] Failed to retrieve users list");
-            return StatusCode(500, new { error = "Internal server error" });
-        }
-    }
-
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(long id)
+    public async Task<IActionResult> GetByIdAsync(long id)
     {
         try
         {
@@ -62,12 +42,32 @@ public class ProfilesController : ControllerBase
             return StatusCode(500, new { error = "Internal server error" });
         }
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllAsync()
+    {
+        try
+        {
+            _logger.LogInformation("[Info] Get all users request. RequestedBy={UserId}", 
+                User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) ?? "anonymous");
+            
+            List<UserInfoDto> listDto = await _userService.GetAllAsync();
+            
+            _logger.LogInformation("[Info] Retrieved {Count} users", listDto.Count);
+            return Ok(listDto);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Error] Failed to retrieve users list");
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
     
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<IActionResult> UpdateUser(long id, [FromBody] ChangeUserInfoDto dto)
+    public async Task<IActionResult> UpdateAsync(long id, [FromBody] ChangeUserInfoDto dto)
     {
-        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var currentUserId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
         // Check: only user can edit his own profile (or admin)
         if (currentUserId != id.ToString() && !User.IsInRole("Admin"))
@@ -109,9 +109,9 @@ public class ProfilesController : ControllerBase
 
     [HttpPatch("{id}")]
     [Authorize]
-    public async Task<IActionResult> ChangeUserPassword(long id, [FromBody] ChangeUserPasswordDto dto)
+    public async Task<IActionResult> ChangeUserPasswordAsync(long id, [FromBody] ChangeUserPasswordDto dto)
     {
-        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var currentUserId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
         if (currentUserId != id.ToString() && !User.IsInRole("Admin"))
         {
@@ -153,9 +153,9 @@ public class ProfilesController : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize]
-    public async Task<IActionResult> DeleteUser(long id)
+    public async Task<IActionResult> DeleteAsync(long id)
     {
-        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var currentUserId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
         if (currentUserId != id.ToString() && !User.IsInRole("Admin"))
         {
@@ -186,12 +186,13 @@ public class ProfilesController : ControllerBase
         }
     }
     
-    //TODO: GetUserSavedPlaylists
-    //TODO: GetUserSavedAlbums
+    //TODO: GetUserLibraryAsync
+    //TODO: GetUserSavedPlaylistsAsync
+    //TODO: GetUserSavedAlbumsAsync
     
     [HttpPost("subscription")]
     [Authorize]
-    public async Task<IActionResult> FollowUser([FromBody] FollowUserDto dto)
+    public async Task<IActionResult> FollowUserAsync([FromBody] FollowUserDto dto)
     {
         var userIdClaim = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
     
@@ -237,7 +238,7 @@ public class ProfilesController : ControllerBase
 
     [HttpDelete("subscription")]
     [Authorize]
-    public async Task<IActionResult> UnfollowUser([FromBody] FollowUserDto dto)
+    public async Task<IActionResult> UnfollowUserAsync([FromBody] FollowUserDto dto)
     {
         var userIdClaim = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
     

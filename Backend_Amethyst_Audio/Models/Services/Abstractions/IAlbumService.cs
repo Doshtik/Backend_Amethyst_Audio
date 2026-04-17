@@ -14,7 +14,7 @@ public interface IAlbumService
 
     Task<List<AlbumInfoDto>> GetListOfNewestAsync();
     
-    Task<List<AlbumInfoDto>> GetListBySearchAsync(string search);
+    Task<List<AlbumInfoDto>> GetListByAlbumNameAsync(string search);
     Task<List<AlbumInfoDto>> GetListByUserIdAsync(long userId);
     Task<List<AlbumInfoDto>> GetListSavedAsync(long userId);
     

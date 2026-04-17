@@ -25,7 +25,7 @@ public class RecommendationController : ControllerBase
     /// GET /api/Recommendation/config
     /// </summary>
     [HttpGet("config")]
-    public async Task<IActionResult> GetRecommendationConfig()
+    public async Task<IActionResult> GetRecommendationConfigAsync()
     {
         try
         {
@@ -51,7 +51,7 @@ public class RecommendationController : ControllerBase
     /// </summary>
     [HttpGet("query")]
     [Authorize]
-    public async Task<IActionResult> GetPersonalizedRecommendations([FromBody] PageMyRecordPersonalizedDto dto)
+    public async Task<IActionResult> GetPersonalizedRecommendationsAsync([FromBody] PageMyRecordPersonalizedDto dto)
     {
         var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         

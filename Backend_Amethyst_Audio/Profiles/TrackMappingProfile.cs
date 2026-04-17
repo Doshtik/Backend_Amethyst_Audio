@@ -15,8 +15,8 @@ public class TrackMappingProfile : Profile
             .ForMember(dest => dest.UserList,
                 opt => opt.MapFrom(src => src.TracksAuthors.Select(ta => ta.IdAuthorNavigation)))
             .ForMember(dest => dest.TrackUrl, 
-                opt => opt.MapFrom(src => $"{_baseUrl}/Audio/{src.Id}"))
+                opt => opt.MapFrom(src => $"{_baseUrl}/audio/{src.Id}"))
             .ForMember(dest => dest.CoverUrl, 
-                opt => opt.MapFrom(src => $"{_baseUrl}/Cover/{src.Id}"));
+                opt => opt.MapFrom(src => $"{_baseUrl}/cover/{src.Id}"));
     }
 }

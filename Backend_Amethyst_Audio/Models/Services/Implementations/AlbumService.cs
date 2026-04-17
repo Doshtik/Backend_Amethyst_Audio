@@ -92,7 +92,7 @@ public class AlbumService : IAlbumService
         return _mapper.Map<List<AlbumInfoDto>>(albums);
     }
 
-    public async Task<List<AlbumInfoDto>> GetListBySearchAsync(string search)
+    public async Task<List<AlbumInfoDto>> GetListByAlbumNameAsync(string search)
     {
         _logger.LogDebug("[Debug] Searching albums with pattern: {SearchPattern}", search);
         var albums = await _db.AlbumsAuthors.AsNoTracking()

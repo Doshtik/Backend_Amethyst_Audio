@@ -21,7 +21,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("signin")]
-    public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
+    public async Task<IActionResult> CreateUserAsync([FromBody] CreateUserDto dto)
     {
         try
         {
@@ -31,7 +31,7 @@ public class AuthController : ControllerBase
             
             _logger.LogInformation("[Info] User registered successfully. UserId={UserId}, Email={Email}", 
                 result.Id, dto.Email);
-            return CreatedAtAction(nameof(CreateUser), new { id = result.Id }, result);
+            return CreatedAtAction(nameof(CreateUserAsync), new { id = result.Id }, result);
         }
         catch (BadHttpRequestException e)
         {
@@ -47,7 +47,7 @@ public class AuthController : ControllerBase
     }
     
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    public async Task<IActionResult> LoginAsync([FromBody] LoginDto dto)
     {
         try
         {
@@ -77,7 +77,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login/{provider}")]
-    public async Task<IActionResult> ExternalLogin(string provider, [FromBody] LoginDto dto)
+    public async Task<IActionResult> ExternalLoginAsync(string provider, [FromBody] LoginDto dto)
     {
         _logger.LogInformation("[Info] External login attempt. Provider={Provider}, Email={Email}", 
             provider, dto.Email);
@@ -96,7 +96,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh(/*[FromBody] RefreshRequestDto dto*/)
+    public async Task<IActionResult> RefreshAsync(/*[FromBody] RefreshRequestDto dto*/)
     {
         try
         {
@@ -113,7 +113,7 @@ public class AuthController : ControllerBase
 
     [Authorize]
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout()
+    public async Task<IActionResult> LogoutAsync()
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         _logger.LogInformation("[Info] Logout request. UserId={UserId}", userId);

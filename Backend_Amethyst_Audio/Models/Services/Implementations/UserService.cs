@@ -204,18 +204,21 @@ public class UserService : IUserService
         _logger.LogInformation("[Info] User deleted. UserId={UserId}", id);
     }
 
-    public async Task<UserInfoDto> GetByNicknameAsync(string nickname)
+    public async Task<List<UserInfoDto>> GetListByNicknameAsync(string nickname)
     {
-        _logger.LogDebug("[Debug] Get user by nickname. Nickname={Nickname}", nickname);
+        _logger.LogDebug("[Debug] Get user list by nickname. Nickname={Nickname}", nickname);
         
-        User? user = await _db.Users.FirstOrDefaultAsync(u => u.Nickname == nickname);
-        if (user == null)
+        List<User> users = await _db.Users
+            .Where(u => u.Nickname == nickname)
+            .ToListAsync();
+        
+        if (users.Count is 0)
         {
-            _logger.LogWarning("[Warn] User not found by nickname. Nickname={Nickname}", nickname);
-            throw new KeyNotFoundException("User not found");
+            _logger.LogWarning("[Warn] Users not found by nickname. Nickname={Nickname}", nickname);
+            throw new KeyNotFoundException("Users not found");
         }
         
-        return _mapper.Map<UserInfoDto>(user);
+        return _mapper.Map<List<UserInfoDto>>(users);
     }
 
     public async Task<int> GetListenersAmountAsync(long userId)

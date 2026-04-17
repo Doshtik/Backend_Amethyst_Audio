@@ -21,7 +21,7 @@ public class PlaylistsController : ControllerBase
 
     [HttpGet("{id}")]
     [Authorize]
-    public async Task<IActionResult> GetById(long id)
+    public async Task<IActionResult> GetByIdAsync(long id)
     {
         long userId = long.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
         
@@ -52,62 +52,9 @@ public class PlaylistsController : ControllerBase
         }
     }
 
-    [HttpGet("user/{userId}")]
-    [Authorize]
-    public async Task<IActionResult> GetByUserId(long userId)
-    {
-        var currentUserId = long.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
-        
-        try
-        {
-            _logger.LogDebug("[Debug] Get playlists by user. TargetUserId={UserId}, RequestedBy={CurrentUserId}", 
-                userId, currentUserId);
-            
-            List<PlaylistInfoDto> playlists = await _playlistService.GetListByUserIdAsync(userId);
-            
-            _logger.LogInformation("[Info] Retrieved {Count} playlists for user. UserId={UserId}", 
-                playlists.Count, userId);
-            return Ok(playlists);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Error] Failed to get user playlists. UserId={UserId}", userId);
-            return StatusCode(500, new { error = "Internal server error" });
-        }
-    }
-
-    [HttpGet("search")]
-    [Authorize]
-    public async Task<IActionResult> Search([FromQuery] string query, [FromQuery] int limit = 50)
-    {
-        var userId = long.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
-        
-        try
-        {
-            _logger.LogDebug("[Debug] Search playlists. Query={Query}, Limit={Limit}, RequestedBy={UserId}", 
-                query, limit, userId);
-            
-            if (string.IsNullOrWhiteSpace(query))
-            {
-                _logger.LogWarning("[Warn] Empty search query");
-                return BadRequest(new { error = "Search query cannot be empty" });
-            }
-            
-            var playlists = await _playlistService.SearchAsync(userId, query, limit);
-            
-            _logger.LogInformation("[Info] Search completed. Query={Query}, Found={Count}", query, playlists.Count);
-            return Ok(playlists);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Error] Search failed. Query={Query}", query);
-            return StatusCode(500, new { error = "Internal server error" });
-        }
-    }
-
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAllAsync()
     {
         var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
@@ -126,10 +73,34 @@ public class PlaylistsController : ControllerBase
             return StatusCode(500, new { error = "Internal server error" });
         }
     }
+    
+    [HttpGet("user/{userId}")]
+    [Authorize]
+    public async Task<IActionResult> GetListByUserIdAsync(long userId)
+    {
+        var currentUserId = long.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
+        
+        try
+        {
+            _logger.LogDebug("[Debug] Get list of playlists by user id. TargetUserId={UserId}, RequestedBy={CurrentUserId}", 
+                userId, currentUserId);
+            
+            List<PlaylistInfoDto> playlists = await _playlistService.GetListByUserIdAsync(userId);
+            
+            _logger.LogInformation("[Info] Retrieved {Count} playlists for user. UserId={UserId}", 
+                playlists.Count, userId);
+            return Ok(playlists);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Error] Failed to get user playlists. UserId={UserId}", userId);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> Create([FromBody] CreatePlaylistDto dto)
+    public async Task<IActionResult> CreateAsync([FromBody] CreatePlaylistDto dto)
     {
         var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
@@ -148,7 +119,7 @@ public class PlaylistsController : ControllerBase
             
             _logger.LogInformation("[Info] Playlist created successfully. PlaylistId={PlaylistId}, Title={Title}", 
                 playlist.Id, dto.Name);
-            return CreatedAtAction(nameof(GetById), new { id = playlist.Id }, playlist);
+            return CreatedAtAction(nameof(CreateAsync), new { id = playlist.Id }, playlist);
         }
         catch (ArgumentException e)
         {
@@ -165,7 +136,7 @@ public class PlaylistsController : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<IActionResult> Update(long id, [FromBody] ChangePlaylistInfoDto dto) 
+    public async Task<IActionResult> UpdateAsync(long id, [FromBody] ChangePlaylistInfoDto dto) 
     {
         long? userId = long.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
         
@@ -210,7 +181,7 @@ public class PlaylistsController : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize]
-    public async Task<IActionResult> Delete(long id)
+    public async Task<IActionResult> DeleteAsync(long id)
     {
         var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
@@ -243,7 +214,7 @@ public class PlaylistsController : ControllerBase
 
     [HttpPost("{id}/save")]
     [Authorize]
-    public async Task<IActionResult> SavePlaylist(long id)
+    public async Task<IActionResult> SavePlaylistAsync(long id)
     {
         var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
@@ -280,7 +251,7 @@ public class PlaylistsController : ControllerBase
 
     [HttpDelete("{id}/save")]
     [Authorize]
-    public async Task<IActionResult> UnsavePlaylist(long id)
+    public async Task<IActionResult> UnsavePlaylistAsync(long id)
     {
         var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         

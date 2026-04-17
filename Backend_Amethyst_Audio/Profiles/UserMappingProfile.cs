@@ -15,9 +15,9 @@ public class UserMappingProfile : Profile
         // Чтение: из сущности в DTO
         CreateMap<User, UserInfoDto>()
             .ForMember(dest => dest.AvatarUrl, 
-                opt => opt.MapFrom(src => $"{_baseUrl}/Users/Avatars/{src.Id}"))
+                opt => opt.MapFrom(src => $"{_baseUrl}/users/avatars/{src.Id}"))
             .ForMember(dest => dest.HeaderUrl, 
-                opt => opt.MapFrom(src => $"{_baseUrl}/Users/Headers/{src.Id}"));
+                opt => opt.MapFrom(src => $"{_baseUrl}/users/headers/{src.Id}"));
 
         // Обновление: мапим данные из DTO в уже существующий объект User
         CreateMap<ChangeUserInfoDto, User>()
