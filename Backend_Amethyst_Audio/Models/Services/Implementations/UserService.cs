@@ -14,6 +14,7 @@ public class UserService : IUserService
     private readonly ITokenService _tokenService;
     private readonly IMapper _mapper;
     private readonly ILogger<UserService> _logger;
+    private IUserService _userServiceImplementation;
 
     public UserService(
         AppDbContext db, 
@@ -114,18 +115,23 @@ public class UserService : IUserService
         return userDto;
     }
 
+    public async Task LogoutAsync(long userId)
+    {
+        return;
+    }
+
     public async Task UpdateAsync(long id, ChangeUserInfoDto dto)
     {
         _logger.LogInformation("[Info] Updating user data. UserId={UserId}", id);
         
         var user = await _db.Users.FindAsync(id);
-        if (user == null)
+        if (user is null)
         {
             _logger.LogWarning("[Warn] User not found for update. UserId={UserId}", id);
             throw new KeyNotFoundException("User not found");
         }
 
-        // Username validation
+        // Nickname validation
         if (!string.IsNullOrWhiteSpace(dto.Nickname) && dto.Nickname != user.Nickname)
         {
             if (await _db.Users.AnyAsync(u => u.Nickname == dto.Nickname && u.Id != id))
@@ -136,7 +142,7 @@ public class UserService : IUserService
             }
         }
 
-        // Eamil validation
+        // Email validation
         if (!string.IsNullOrWhiteSpace(dto.Email) && dto.Email != user.Email)
         {
             if (await _db.Users.AnyAsync(u => u.Email == dto.Email && u.Id != id))

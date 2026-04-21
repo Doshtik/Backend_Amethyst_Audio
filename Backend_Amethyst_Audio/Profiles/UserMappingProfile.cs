@@ -9,17 +9,17 @@ public class UserMappingProfile : Profile
     private readonly string _baseUrl = Environment.GetEnvironmentVariable("BASE_URL");
     public UserMappingProfile()
     {
-        // Создание: из DTO в сущность
+        // Create: From DTO to Entity
         CreateMap<CreateUserDto, User>();
-
-        // Чтение: из сущности в DTO
+        
+        // Read: From Entity to DTO
         CreateMap<User, UserInfoDto>()
             .ForMember(dest => dest.AvatarUrl, 
                 opt => opt.MapFrom(src => $"{_baseUrl}/users/avatars/{src.Id}"))
             .ForMember(dest => dest.HeaderUrl, 
                 opt => opt.MapFrom(src => $"{_baseUrl}/users/headers/{src.Id}"));
 
-        // Обновление: мапим данные из DTO в уже существующий объект User
+        // Update: we are mapping data from DTO in already existing object User
         CreateMap<ChangeUserInfoDto, User>()
             .ForAllMembers(opts =>
                 opts.Condition((src, dest, srcMember) => srcMember != null)); // мапить только не пустые поля

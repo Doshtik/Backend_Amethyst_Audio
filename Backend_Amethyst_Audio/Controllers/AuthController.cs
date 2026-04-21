@@ -31,7 +31,7 @@ public class AuthController : ControllerBase
             
             _logger.LogInformation("[Info] User registered successfully. UserId={UserId}, Email={Email}", 
                 result.Id, dto.Email);
-            return CreatedAtAction(nameof(CreateUserAsync), new { id = result.Id }, result);
+            return StatusCode(StatusCodes.Status201Created, result);
         }
         catch (BadHttpRequestException e)
         {
@@ -46,7 +46,7 @@ public class AuthController : ControllerBase
         }
     }
     
-    [HttpPost("login")]
+    [HttpGet("login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginDto dto)
     {
         try
@@ -76,7 +76,7 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost("login/{provider}")]
+    [HttpGet("login/{provider}")]
     public async Task<IActionResult> ExternalLoginAsync(string provider, [FromBody] LoginDto dto)
     {
         _logger.LogInformation("[Info] External login attempt. Provider={Provider}, Email={Email}", 
