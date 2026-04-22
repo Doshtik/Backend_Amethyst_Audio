@@ -81,24 +81,49 @@ public class TracksService : ITrackService
         }
 
         var track = _mapper.Map<Track>(dto);
+
+        Mood? mood = await _db.Moods.AsNoTracking().FirstOrDefaultAsync(x => x.MoodName == dto.MoodName);
+        Pace? pace = await _db.Paces.AsNoTracking().FirstOrDefaultAsync(x => x.PaceName == dto.PaceName);
+        
+        track.IdMood = mood?.Id;
+        track.IdPace = pace?.Id;
         track.CreatedAt = DateTime.UtcNow;
         track.UpdatedAt = DateTime.UtcNow;
         
         track.TrackFileName = trackFileName;
         track.CoverFileName = coverFileName;
-
+        
+        foreach (var authorDto in dto.Authors)
+        {
+            track.TracksAuthors.Add(new TracksAuthor
+            {
+                IdTrack = track.Id,
+                IdAuthor = authorDto.Id
+            });
+        }
+        
         await _db.Tracks.AddAsync(track);
         await _db.SaveChangesAsync();
 
         _logger.LogInformation("[Info] Track created successfully. TrackId={TrackId}, Title={Title}", track.Id, track.Name);
-        return _mapper.Map<TrackInfoDto>(track);
+        
+        var createdTrack = await _db.Tracks
+            .AsNoTracking()
+            .Include(t => t.TracksAuthors)
+            .ThenInclude(ta => ta.IdAuthorNavigation)
+            .FirstOrDefaultAsync(t => t.Id == track.Id);
+        
+        return _mapper.Map<TrackInfoDto>(createdTrack);
     }
 
     public async Task<TrackInfoDto> UpdateAsync(ChangeTrackInfoDto dto)
     {
         _logger.LogDebug("[Debug] Updating track. TrackId={TrackId}", dto.Id);
 
-        var track = await _db.Tracks.FirstOrDefaultAsync(t => t.Id == dto.Id);
+        var track = await _db.Tracks
+            .Include(t => t.TracksAuthors)
+                .ThenInclude(ta => ta.IdAuthorNavigation)
+            .FirstOrDefaultAsync(t => t.Id == dto.Id);
         if (track == null)
         {
             _logger.LogWarning("[Warn] Track not found for update. TrackId={TrackId}", dto.Id);
@@ -106,6 +131,12 @@ public class TracksService : ITrackService
         }
 
         _mapper.Map(dto, track);
+
+        Mood? mood = await _db.Moods.AsNoTracking().FirstOrDefaultAsync(x => x.MoodName == dto.MoodName);
+        Pace? pace = await _db.Paces.AsNoTracking().FirstOrDefaultAsync(x => x.PaceName == dto.PaceName);
+        
+        track.IdMood = mood?.Id;
+        track.IdPace = pace?.Id;
         track.UpdatedAt = DateTime.UtcNow;
 
         if (dto.TrackFile is not null)
@@ -113,10 +144,11 @@ public class TracksService : ITrackService
             _logger.LogDebug("[Debug] Updating track audio file. OldFile={OldFile}", track.TrackFileName);
             try
             {
+                var newFileName = await _mediaService.SaveFileAsync(dto.TrackFile, FileTypes.Tracks);
+                
                 if (!string.IsNullOrEmpty(track.TrackFileName))
                     await _mediaService.DeleteFileAsync(track.TrackFileName);
-
-                var newFileName = await _mediaService.SaveFileAsync(dto.TrackFile, FileTypes.Tracks);
+                
                 track.TrackFileName = newFileName;
             }
             catch (Exception ex)
@@ -131,10 +163,12 @@ public class TracksService : ITrackService
             _logger.LogDebug("[Debug] Updating track cover file. OldFile={OldFile}", track.CoverFileName);
             try
             {
-                if (!string.IsNullOrEmpty(track.CoverFileName))
-                    await _mediaService.DeleteFileAsync(track.CoverFileName);
 
                 var newFileName = await _mediaService.SaveFileAsync(dto.CoverFile, FileTypes.Covers);
+                
+                if (!string.IsNullOrEmpty(track.CoverFileName))
+                    await _mediaService.DeleteFileAsync(track.CoverFileName);
+                
                 track.CoverFileName = newFileName;
             }
             catch (Exception ex)
@@ -275,26 +309,14 @@ public class TracksService : ITrackService
         return result;
     }
 
-    public async Task<List<TrackInfoDto>> GetListOfLikedAsync(long playlistId)
+    public async Task<List<TrackInfoDto>> GetUserLibraryAsync(long userId)
     {
-        _logger.LogDebug("[Debug] Get liked tracks from playlist. PlaylistId={PlaylistId}", playlistId);
-        
-        var tracks = await _db.PlaylistsTracks
-            .AsNoTracking()
-            .Where(pt => pt.IdPlaylist == playlistId)
-            .Select(pt => new TrackInfoDto
-            {
-                Id = pt.IdTrackNavigation.Id,
-                Name = pt.IdTrackNavigation.Name,
-                CoverUrl = pt.IdTrackNavigation.CoverFileName,
-                DurationSec = pt.IdTrackNavigation.DurationSec,
-                UserList = _mapper.Map<List<UserInfoDto>>(pt.IdTrackNavigation.TracksAuthors.ToList())
-            })
+        var tracks = await _db.Libraries
+            .Where(x => x.IdUser == userId)
+            .SelectMany(x => x.LibrariesTracks)
+            .Select(x => x.IdTrackNavigation)
             .ToListAsync();
-        
-        _logger.LogInformation("[Info] Retrieved {Count} liked tracks. PlaylistId={PlaylistId}", 
-            tracks.Count, playlistId);
-        return tracks;
+        return _mapper.Map<List<TrackInfoDto>>(tracks);
     }
 
     public async Task<List<TrackInfoDto>> GetPersonalizedRecommendationsAsync(

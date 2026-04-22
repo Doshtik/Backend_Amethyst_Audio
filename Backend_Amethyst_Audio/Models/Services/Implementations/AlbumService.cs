@@ -47,8 +47,13 @@ public class AlbumService : IAlbumService
     {
         _logger.LogDebug("[Debug] Creating new album from DTO: {@Dto}", dto);
         var albumEntity = _mapper.Map<Album>(dto);
+        
+        albumEntity.CreatedAt = DateTime.Now;
+        albumEntity.UpdatedAt = DateTime.Now;
+        
         await _db.Albums.AddAsync(albumEntity);
         await _db.SaveChangesAsync();
+        
         _logger.LogInformation("[Info] Successfully created album with ID {AlbumId}", albumEntity.Id);
         return _mapper.Map<AlbumInfoDto>(albumEntity);
     }
@@ -57,8 +62,12 @@ public class AlbumService : IAlbumService
     {
         _logger.LogDebug("[Debug] Updating album with DTO: {@Dto}", dto);
         var albumEntity = _mapper.Map<Album>(dto);
+        
+        albumEntity.UpdatedAt = DateTime.Now;
+        
         _db.Albums.Update(albumEntity);
         await _db.SaveChangesAsync();
+        
         _logger.LogInformation("[Info] Successfully updated album {AlbumId}", albumEntity.Id);
         return _mapper.Map<AlbumInfoDto>(albumEntity);
     }

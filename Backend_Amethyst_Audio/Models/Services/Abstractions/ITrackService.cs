@@ -18,6 +18,7 @@ public interface ITrackService
     Task<GenreInfoDto> GetListGenresAsync();
     Task<List<TrackInfoDto>> GetListByGenreAsync(string genre);
     Task<List<TrackInfoDto>> GetListByTrackNameAsync(string trackName);
+    Task<List<TrackInfoDto>> GetUserLibraryAsync(long userId);
     Task<List<TrackInfoDto>> GetListTrackByUserIdAsync(long userId);
     Task<List<TrackInfoDto>> GetListOfNewestAsync(int limit = 50);
     

@@ -11,11 +11,18 @@ namespace Backend_Amethyst_Audio.Controllers;
 public class ProfilesController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly ITrackService _trackService;
+    private readonly IPlaylistService _playlistService;
+    private readonly IAlbumService _albumService;
     private readonly ILogger<ProfilesController> _logger;
     
-    public ProfilesController(IUserService userService, ILogger<ProfilesController> logger) 
+    public ProfilesController(IUserService userService, ITrackService trackService, IPlaylistService playlistService, 
+        IAlbumService albumService, ILogger<ProfilesController> logger) 
     {
         _userService = userService;
+        _trackService = trackService;
+        _playlistService = playlistService;
+        _albumService = albumService;
         _logger = logger;
     }
 
@@ -69,8 +76,8 @@ public class ProfilesController : ControllerBase
     {
         var currentUserId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
-        // Check: only user can edit his own profile (or admin)
-        if (currentUserId != id.ToString() && !User.IsInRole("Admin"))
+        // Check: only user can edit his own profile
+        if (currentUserId != id.ToString())
         {
             _logger.LogWarning("[Warn] Unauthorized update attempt. CurrentUserId={CurrentId}, TargetUserId={TargetId}", 
                 currentUserId, id);
@@ -186,9 +193,32 @@ public class ProfilesController : ControllerBase
         }
     }
     
-    //TODO: GetUserLibraryAsync
-    //TODO: GetUserSavedPlaylistsAsync
-    //TODO: GetUserSavedAlbumsAsync
+    //TODO: GetUserLibraryAsync (Вроде бы сделал)
+    [HttpGet("library/{userId}")]
+    [Authorize]
+    public async Task<IActionResult> GetUserLibraryAsync(long userId)
+    {
+        var list = await _trackService.GetUserLibraryAsync(userId);
+        return Ok(list);
+    }
+    
+    //TODO: GetUserSavedPlaylistsAsync (Вроде бы сделал)
+    [HttpGet("library/playlists/{userId}")]
+    [Authorize]
+    public async Task<IActionResult> GetUserSavedPlaylistsAsync(long userId)
+    {
+        var list = _playlistService.GetListSavedAsync(userId);
+        return Ok(list);
+    }
+    
+    //TODO: GetUserSavedAlbumsAsync (Вроде бы сделал)
+    [HttpGet("library/albums/{userId}")]
+    [Authorize]
+    public async Task<IActionResult> GetUserSavedAlbumsAsync(long userId)
+    {
+        var list = _albumService.GetListSavedAsync(userId);
+        return Ok(list);
+    }
     
     [HttpPost("subscription")]
     [Authorize]

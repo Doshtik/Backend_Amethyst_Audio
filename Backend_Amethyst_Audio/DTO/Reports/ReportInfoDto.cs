@@ -1,0 +1,18 @@
+namespace Backend_Amethyst_Audio.DTO.Reports;
+
+public class ReportInfoDto
+{
+    public long Id { get; set; }
+    
+    public long IdUser { get; set; }
+
+    public short IdType { get; set; }
+
+    public short IdReason { get; set; }
+
+    public string? Description { get; set; }
+
+    public bool IsActive { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+}

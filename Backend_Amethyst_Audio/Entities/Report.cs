@@ -13,7 +13,7 @@ public partial class Report
 
     public short IdReason { get; set; }
 
-    public string? Discription { get; set; }
+    public string? Description { get; set; }
 
     public bool IsActive { get; set; }
 

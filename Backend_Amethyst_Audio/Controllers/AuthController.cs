@@ -76,6 +76,9 @@ public class AuthController : ControllerBase
         }
     }
 
+    /*
+     * Сделать, всё-таки посторонний вход, или нет
+     */
     [HttpGet("login/{provider}")]
     public async Task<IActionResult> ExternalLoginAsync(string provider, [FromBody] LoginDto dto)
     {
@@ -95,6 +98,9 @@ public class AuthController : ControllerBase
         }
     }
 
+    /*
+     * На данный момент данный маршрут не нужен, потому что у меня примитивный JWT
+     */
     [HttpPost("refresh")]
     public async Task<IActionResult> RefreshAsync(/*[FromBody] RefreshRequestDto dto*/)
     {
@@ -111,6 +117,9 @@ public class AuthController : ControllerBase
         }
     }
 
+    /*
+     * На данный момент данный маршрут не нужен, потому что у меня примитивный JWT
+     */
     [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> LogoutAsync()
