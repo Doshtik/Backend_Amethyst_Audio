@@ -58,7 +58,7 @@ public class PlaylistService : IPlaylistService
     public async Task<PlaylistInfoDto> CreateAsync(CreatePlaylistDto dto, long ownerId)
     {
         _logger.LogInformation("[Info] Creating playlist. OwnerId={OwnerId}, Title={Title}, IsPublic={IsPublic}", 
-            ownerId, dto.Name, dto.AccessTypeName);
+            ownerId, dto.Name, dto.IsPublic);
         
         // Playlist name validation
         if (string.IsNullOrWhiteSpace(dto.Name))
@@ -102,7 +102,7 @@ public class PlaylistService : IPlaylistService
         }
         
         // Rights validation: only owner can update playlist
-        if (playlist.IdUser.ToString() != requestedBy && !IsAdmin(requestedBy))
+        if (playlist.IdUser.ToString() != requestedBy)
         {
             _logger.LogWarning("[Warn] Unauthorized update attempt. PlaylistId={PlaylistId}, OwnerId={OwnerId}, RequestedBy={UserId}", 
                 id, playlist.IdUser, requestedBy);
@@ -147,7 +147,7 @@ public class PlaylistService : IPlaylistService
         }
         
         // Rights validation: only owner can delete playlist
-        if (playlist.IdUser.ToString() != requestedBy && !IsAdmin(requestedBy))
+        if (playlist.IdUser.ToString() != requestedBy)
         {
             _logger.LogWarning("[Warn] Unauthorized delete attempt. PlaylistId={PlaylistId}, OwnerId={OwnerId}, RequestedBy={UserId}", 
                 id, playlist.IdUser, requestedBy);
@@ -352,12 +352,5 @@ public class PlaylistService : IPlaylistService
         
         _logger.LogInformation("[Info] Playlist unsaved successfully. UserId={UserId}, PlaylistId={PlaylistId}", 
             userId, playlistId);
-    }
-    
-    // Helper: проверка на админа (заглушка)
-    private bool IsAdmin(string userId)
-    {
-        // TODO: Реализовать проверку роли через _userManager.IsInRoleAsync или кэш
-        return false;
     }
 }

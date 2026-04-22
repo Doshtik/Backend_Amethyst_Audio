@@ -49,14 +49,7 @@ public class ReportService : IReportService
     public async Task<ReportInfoDto> CreateAsync(CreateReportDto dto)
     {
         _logger.LogInformation("[Info] Creating report");
-        Report? report = _mapper.Map<Report>(dto);
-
-        if (report is null)
-        {
-            _logger.LogError("[Error] Report creation failed");
-            throw new KeyNotFoundException($"Report creation failed");
-        }
-        
+        Report report = _mapper.Map<Report>(dto);
         report.CreatedAt = DateTime.Now;
         
         await _db.Reports.AddAsync(report);
@@ -105,14 +98,7 @@ public class ReportService : IReportService
     public async Task<ReportAnswerInfoDto> CreateAnswerAsync(CreateReportAnswerDto report)
     {
         _logger.LogInformation("[Info] Creating report answer");
-        ReportAnswer? answer = _mapper.Map<ReportAnswer>(report);
-
-        if (answer is null)
-        {
-            _logger.LogError("[Error] Answer creation failed");
-            throw new KeyNotFoundException($"Answer creation failed");
-        }
-        
+        ReportAnswer answer = _mapper.Map<ReportAnswer>(report);
         answer.CreatedAt = DateTime.Now;
         
         await _db.ReportAnswers.AddAsync(answer);

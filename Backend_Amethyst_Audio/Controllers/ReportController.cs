@@ -64,7 +64,7 @@ public class ReportController : ControllerBase
     public async Task<IActionResult> DeleteAsync(long reportId)
     {
         await _reportService.DeleteAsync(reportId);
-        return NotFound();
+        return NoContent();
     }
     
     
@@ -116,7 +116,7 @@ public class ReportController : ControllerBase
         try
         {
             await _reportService.DeleteAnswerAsync(reportAnswerId);
-            return NotFound();
+            return NoContent();
         }
         catch (KeyNotFoundException e)
         {

@@ -1,18 +1,22 @@
 using System.Security;
+using Backend_Amethyst_Audio.Data;
 using Backend_Amethyst_Audio.Models.Enums;
 using Backend_Amethyst_Audio.Services.Abstractions;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend_Amethyst_Audio.Services.Implementations;
 
 public class MediaService: IMediaService
 {
     private readonly ILogger<MediaService> _logger;
+    private readonly AppDbContext _db;
     public string RootPath { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "AmethystAudio");
 
-    public MediaService(ILogger<MediaService> logger)
+    public MediaService(ILogger<MediaService> logger, AppDbContext db)
     {
         _logger = logger;
+        _db = db;
     }
 
     public async Task<string> SaveFileAsync(IFormFile file, FileTypes typeName)
@@ -33,7 +37,6 @@ public class MediaService: IMediaService
             
             string extension = Path.GetExtension(file.FileName);
             
-            // Validate file extension for security
             if (string.IsNullOrWhiteSpace(extension) || IsExtensionDangerous(extension))
             {
                 _logger.LogWarning("[Warn] Dangerous file extension rejected. Extension={Extension}, OriginalName={FileName}", 
@@ -105,8 +108,7 @@ public class MediaService: IMediaService
     {
         _logger.LogDebug("[Debug] Getting track file path. TrackId={TrackId}", id);
         
-        // TODO: Replace with actual DB lookup
-        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Tracks);
+        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Tracks, FileSource.FromTracks);
         
         if (string.IsNullOrEmpty(fileName))
         {
@@ -130,7 +132,7 @@ public class MediaService: IMediaService
     {
         _logger.LogDebug("[Debug] Getting track cover path. TrackId={TrackId}", id);
         
-        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Covers);
+        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Covers, FileSource.FromTracks);
         
         if (string.IsNullOrEmpty(fileName))
         {
@@ -154,7 +156,7 @@ public class MediaService: IMediaService
     {
         _logger.LogDebug("[Debug] Getting playlist cover path. PlaylistId={PlaylistId}", id);
         
-        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Covers);
+        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Covers, FileSource.FromPlaylists);
         
         if (string.IsNullOrEmpty(fileName))
         {
@@ -178,7 +180,7 @@ public class MediaService: IMediaService
     {
         _logger.LogDebug("[Debug] Getting album cover path. AlbumId={AlbumId}", id);
         
-        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Covers);
+        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Covers, FileSource.FromAlbums);
         
         if (string.IsNullOrEmpty(fileName))
         {
@@ -202,7 +204,7 @@ public class MediaService: IMediaService
     {
         _logger.LogDebug("[Debug] Getting user avatar path. UserId={UserId}", id);
         
-        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Avatars);
+        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Avatars, FileSource.FromUsers);
         
         if (string.IsNullOrEmpty(fileName))
         {
@@ -226,7 +228,7 @@ public class MediaService: IMediaService
     {
         _logger.LogDebug("[Debug] Getting user header path. UserId={UserId}", id);
         
-        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Headers);
+        var fileName = await GetFileNameFromDbAsync(id, FileTypes.Headers, FileSource.FromUsers);
         
         if (string.IsNullOrEmpty(fileName))
         {
@@ -247,12 +249,41 @@ public class MediaService: IMediaService
     }
     
     // Helper method for DB lookup (placeholder)
-    private async Task<string> GetFileNameFromDbAsync(int id, FileTypes type)
+    private async Task<string> GetFileNameFromDbAsync(int id, FileTypes type, FileSource source)
     {
-        // TODO: Replace with actual database query
-        // Example: return await _db.MediaFiles.Where(x => x.EntityId == id && x.Type == type).Select(x => x.FileName).FirstOrDefaultAsync();
-        await Task.Yield();
-        return null; // Placeholder
+        string result = string.Empty;
+        switch (source)
+        {
+            case FileSource.FromPlaylists:
+                result = await _db.Playlists.Where(x => x.Id == id).Select(x => x.CoverFileName).FirstAsync();
+                return result;
+            case FileSource.FromAlbums:
+                result = await _db.Albums.Where(x => x.Id == id).Select(x => x.CoverFileName).FirstAsync();
+                return result;
+            case FileSource.FromUsers:
+                switch (type)
+                {
+                    case FileTypes.Avatars:
+                        result = await _db.Users.Where(x => x.Id == id).Select(x => x.AvatarFileName).FirstAsync();
+                        return result;
+                    case FileTypes.Headers:
+                        result = await _db.Users.Where(x => x.Id == id).Select(x => x.HeaderFileName).FirstAsync();
+                        return result;
+                }
+                break;
+            case FileSource.FromTracks:
+                switch (type)
+                {
+                    case FileTypes.Covers:
+                        result = await _db.Tracks.Where(x => x.Id == id).Select(x => x.CoverFileName).FirstAsync();
+                        return result;
+                    case FileTypes.Tracks:
+                        result = await _db.Tracks.Where(x => x.Id == id).Select(x => x.TrackFileName).FirstAsync();
+                        return result;
+                }
+                break;
+        }
+        return result;
     }
     
     // Security: block dangerous extensions

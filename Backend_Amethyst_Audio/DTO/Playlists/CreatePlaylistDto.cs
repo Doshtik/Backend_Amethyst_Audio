@@ -8,7 +8,7 @@ public class CreatePlaylistDto
     public long UserId { get; set; }
 
     [Required]
-    public short AccessTypeName { get; set; }
+    public bool IsPublic { get; set; }
 
     [Required]
     public string Name { get; set; }
