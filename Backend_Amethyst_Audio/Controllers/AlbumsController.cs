@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using Backend_Amethyst_Audio.DTO;
-using Backend_Amethyst_Audio.Entities;
+using Backend_Amethyst_Audio.Models.Entities;
 using Backend_Amethyst_Audio.Services.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
