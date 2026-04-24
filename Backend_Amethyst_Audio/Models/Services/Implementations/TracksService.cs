@@ -322,38 +322,38 @@ public class TracksService : ITrackService
     }
 
     public async Task<List<TrackInfoDto>> GetPersonalizedRecommendationsAsync(
-        PageMyRecordPersonalizedDto dto, 
+        PageResonanceDto recommendationsDto, 
         string? userId = null)
     {
         _logger.LogDebug("[Debug] Building personalized recommendations. Mood={Mood}, Pace={Pace}, UserId={UserId}", 
-            dto.MoodName ?? "*", dto.PaceName ?? "*", userId ?? "anonymous");
+            recommendationsDto.MoodName ?? "*", recommendationsDto.PaceName ?? "*", userId ?? "anonymous");
         
-        // config validation
-        if (!string.IsNullOrWhiteSpace(dto.MoodName) && !await _db.Moods.AnyAsync(m => m.MoodName == dto.MoodName))
+        // Config validation
+        if (!string.IsNullOrWhiteSpace(recommendationsDto.MoodName) && !await _db.Moods.AnyAsync(m => m.MoodName == recommendationsDto.MoodName))
         {
-            _logger.LogWarning("[Warn] Invalid mood filter. Mood={Mood}", dto.MoodName);
-            throw new ArgumentException($"Invalid mood: {dto.MoodName}");
+            _logger.LogWarning("[Warn] Invalid mood filter. Mood={Mood}", recommendationsDto.MoodName);
+            throw new ArgumentException($"Invalid mood: {recommendationsDto.MoodName}");
         }
         
-        if (!string.IsNullOrWhiteSpace(dto.PaceName) && !await _db.Paces.AnyAsync(p => p.PaceName == dto.PaceName))
+        if (!string.IsNullOrWhiteSpace(recommendationsDto.PaceName) && !await _db.Paces.AnyAsync(p => p.PaceName == recommendationsDto.PaceName))
         {
-            _logger.LogWarning("[Warn] Invalid pace filter. Pace={Pace}", dto.PaceName);
-            throw new ArgumentException($"Invalid pace: {dto.PaceName}");
+            _logger.LogWarning("[Warn] Invalid pace filter. Pace={Pace}", recommendationsDto.PaceName);
+            throw new ArgumentException($"Invalid pace: {recommendationsDto.PaceName}");
         }
 
-        // dynamic query
+        // Dynamic query
         var query = _db.PlaylistsTracks
             .AsNoTracking()
             .AsQueryable();
         
-        if (!string.IsNullOrWhiteSpace(dto.MoodName))
-            query = query.Where(pt => pt.IdTrackNavigation.IdMoodNavigation!.MoodName == dto.MoodName);
+        if (!string.IsNullOrWhiteSpace(recommendationsDto.MoodName))
+            query = query.Where(pt => pt.IdTrackNavigation.IdMoodNavigation!.MoodName == recommendationsDto.MoodName);
         
-        if (!string.IsNullOrWhiteSpace(dto.PaceName))
-            query = query.Where(pt => pt.IdTrackNavigation.IdPaceNavigation!.PaceName == dto.PaceName);
+        if (!string.IsNullOrWhiteSpace(recommendationsDto.PaceName))
+            query = query.Where(pt => pt.IdTrackNavigation.IdPaceNavigation!.PaceName == recommendationsDto.PaceName);
         
-        if (!string.IsNullOrWhiteSpace(dto.Country))
-            query = query.Where(pt => pt.IdTrackNavigation.Country == dto.Country);
+        if (!string.IsNullOrWhiteSpace(recommendationsDto.Country))
+            query = query.Where(pt => pt.IdTrackNavigation.Country == recommendationsDto.Country);
 
         var tracks = await query
             .Select(pt => new TrackInfoDto

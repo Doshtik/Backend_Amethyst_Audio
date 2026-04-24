@@ -25,6 +25,6 @@ public interface ITrackService
     // Recommendations
     Task<PageMyRecordDto> GetRecommendationConfigAsync();
     Task<List<TrackInfoDto>> GetPersonalizedRecommendationsAsync(
-        PageMyRecordPersonalizedDto dto, 
+        PageResonanceDto recommendationsDto, 
         string userId = null);
 }

@@ -27,7 +27,20 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.LicenseKey = builder.Configuration.GetConnectionString("AutoMapperKey");
 }, typeof(TrackMappingProfile));
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.LicenseKey = builder.Configuration.GetConnectionString("AutoMapperKey");
+}, typeof(PlaylistMappingProfile));
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.LicenseKey = builder.Configuration.GetConnectionString("AutoMapperKey");
+}, typeof(AlbumMappingProfile));
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.LicenseKey = builder.Configuration.GetConnectionString("AutoMapperKey");
+}, typeof(ReportMappingProfile));
 
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ITrackService, TracksService>();

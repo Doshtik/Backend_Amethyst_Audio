@@ -60,6 +60,24 @@ public class TracksController : ControllerBase
         }
     }
 
+    [HttpGet("user/{userId}")]
+    [Authorize]
+    public async Task<IActionResult> GetListByUserIdAsync(long userId)
+    {
+        _logger.LogDebug("[Debug] Request to get list of tracks by user Id: {Id}", userId);
+        try
+        {
+            List<TrackInfoDto> dto = await _trackService.GetListTrackByUserIdAsync(userId);
+            _logger.LogInformation("[Info] Successfully retrieved {Count} tracks", dto.Count);
+            return Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Error] Unexpected error retrieving all user tracks");
+            return Problem(statusCode: 500, title: "Internal Server Error", detail: "An error occurred while processing your request.");
+        }
+    }
+
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> CreateTrack([FromForm] CreateTrackDto dto)

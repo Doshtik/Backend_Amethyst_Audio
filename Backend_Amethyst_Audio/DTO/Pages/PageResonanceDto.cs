@@ -1,6 +1,6 @@
 namespace Backend_Amethyst_Audio.DTO.Pages;
 
-public class PageMyRecordPersonalizedDto
+public class PageResonanceDto
 {
     public string PaceName { get; set; }
     public string MoodName { get; set; }

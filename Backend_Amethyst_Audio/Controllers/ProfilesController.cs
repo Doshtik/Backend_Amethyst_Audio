@@ -27,6 +27,7 @@ public class ProfilesController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> GetByIdAsync(long id)
     {
         try
@@ -51,6 +52,7 @@ public class ProfilesController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAllAsync()
     {
         try
@@ -67,6 +69,24 @@ public class ProfilesController : ControllerBase
         {
             _logger.LogError(e, "[Error] Failed to retrieve users list");
             return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+
+    [HttpGet("")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAmountOfListenersAsync(long userId)
+    {
+        _logger.LogDebug("[Debug] Request to get amount of listeners by user Id: {Id}", userId);
+        try
+        { 
+            int amount = await _userService.GetListenersAmountAsync(userId);
+            _logger.LogInformation("[Info] Successfully retrieved {Amount} tracks", amount);
+            return Ok(amount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Error] Unexpected error retrieving all user tracks");
+            return Problem(statusCode: 500, title: "Internal Server Error", detail: "An error occurred while processing your request.");
         }
     }
     

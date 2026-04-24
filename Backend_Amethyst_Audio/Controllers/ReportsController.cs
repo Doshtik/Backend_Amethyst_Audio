@@ -19,6 +19,7 @@ public class ReportsController : ControllerBase
     }
     
     [HttpGet("{reportId}")]
+    [Authorize]
     public async Task<IActionResult> GetById(long reportId)
     {
         try
@@ -33,6 +34,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAll(string reportType)
     {
         try
@@ -47,6 +49,7 @@ public class ReportsController : ControllerBase
     }
     
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> CreateAsync([FromBody] CreateReportDto dto)
     {
         try
@@ -61,6 +64,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpDelete("{reoprtId}")]
+    [Authorize]
     public async Task<IActionResult> DeleteAsync(long reportId)
     {
         await _reportService.DeleteAsync(reportId);
@@ -69,6 +73,7 @@ public class ReportsController : ControllerBase
     
     
     [HttpGet("answer/{reportAnswerId}")]
+    [Authorize]
     public async Task<IActionResult> GetAnswerById(long reportAnswerId)
     {
         try
@@ -83,6 +88,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("answer")]
+    [Authorize]
     public async Task<IActionResult> GetAnswerAll()
     {
         try
@@ -97,6 +103,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpPost("answer")]
+    [Authorize]
     public async Task<IActionResult> CreateAnswerAsync([FromBody] CreateReportAnswerDto dto)
     {
         try
@@ -110,7 +117,8 @@ public class ReportsController : ControllerBase
         }
     }
 
-    [HttpDelete("{reportAnswerId}")]
+    [HttpDelete("answer/{reportAnswerId}")]
+    [Authorize]
     public async Task<IActionResult> DeleteAnswerAsync(long reportAnswerId)
     {
         try

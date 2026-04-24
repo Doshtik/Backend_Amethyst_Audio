@@ -1,5 +1,5 @@
 using System.Security;
-using Backend_Amethyst_Audio.Data;
+using Backend_Amethyst_Audio.Models.Data;
 using Backend_Amethyst_Audio.Models.Enums;
 using Backend_Amethyst_Audio.Services.Abstractions;
 using Microsoft.AspNetCore.Http.HttpResults;

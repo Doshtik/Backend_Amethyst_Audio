@@ -1,10 +1,12 @@
 using Backend_Amethyst_Audio.Services.Abstractions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend_Amethyst_Audio.Controllers;
 
 [ApiController]
 [Route("api/{controller}")]
+[AllowAnonymous] 
 public class MediaController : ControllerBase
 {
     private readonly IMediaService _service;

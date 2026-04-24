@@ -78,7 +78,7 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("albums", "collections");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.CoverFileName).HasColumnName("cover_file_name");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.Name).HasColumnName("name");
@@ -93,7 +93,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.IdAlbum, e.IdAuthor }, "uq_albums_authors_id_album_id_author").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.IdAlbum).HasColumnName("id_album");
             entity.Property(e => e.IdAuthor).HasColumnName("id_author");
 
@@ -116,7 +116,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.IdAlbum, e.IdTrack }, "uq_albums_tracks_id_album_id_track").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.IdAlbum).HasColumnName("id_album");
             entity.Property(e => e.IdTrack).HasColumnName("id_track");
@@ -142,7 +142,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.IdEmployee, e.IdProvider }, "uq_auth_employees_employee_provider").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.ExternalId).HasColumnName("external_id");
             entity.Property(e => e.IdEmployee).HasColumnName("id_employee");
             entity.Property(e => e.IdProvider).HasColumnName("id_provider");
@@ -162,7 +162,7 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("auth_providers", "auth");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.ProviderName).HasColumnName("provider_name");
         });
 
@@ -176,7 +176,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.IdUser, e.IdProvider }, "uq_auth_users_id_user_id_provider").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.ExternalId).HasColumnName("external_id");
             entity.Property(e => e.IdProvider).HasColumnName("id_provider");
             entity.Property(e => e.IdUser).HasColumnName("id_user");
@@ -200,7 +200,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.Email, "uq_employees_email").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_at");
@@ -230,7 +230,7 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("genres", "content");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.GenreName).HasColumnName("genre_name");
         });
 
@@ -242,7 +242,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.IdLibrary, e.IdTrack }, "uq_libraries_tracks_id_library_id_track").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.IdLibrary).HasColumnName("id_library");
             entity.Property(e => e.IdTrack).HasColumnName("id_track");
@@ -264,7 +264,7 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("libraries", "collections");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.IdUser).HasColumnName("id_user");
 
             entity.HasOne(d => d.IdUserNavigation).WithMany(p => p.Libraries)
@@ -279,7 +279,7 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("moods", "content");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.MoodName).HasColumnName("mood_name");
         });
 
@@ -293,7 +293,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.IdUser, "IX_notifications_id_user");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.Body).HasColumnName("body");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
@@ -320,7 +320,7 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("paces", "content");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.PaceName).HasColumnName("pace_name");
         });
 
@@ -330,7 +330,7 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("playlists", "collections");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.CoverFileName).HasColumnName("cover_file_name");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
@@ -353,7 +353,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.IdPlaylist, e.IdTrack }, "uq_playlists_tracks_id_playlist_id_track").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.IdPlaylist).HasColumnName("id_playlist");
             entity.Property(e => e.IdTrack).HasColumnName("id_track");
@@ -375,7 +375,7 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("reasons", "moderation");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.ReasonName).HasColumnName("reason_name");
         });
 
@@ -391,7 +391,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.IdUser, "IX_reports_id_user");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_at");
@@ -426,7 +426,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.IdReport, "IX_report_answers_id_report");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_at");
@@ -449,7 +449,7 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("roles", "admin");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.RoleName).HasColumnName("role_name");
         });
 
@@ -461,7 +461,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.IdAlbum, e.IdUser }, "uq_saved_albums_id_album_id_user").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.IdAlbum).HasColumnName("id_album");
             entity.Property(e => e.IdUser).HasColumnName("id_user");
 
@@ -484,7 +484,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.IdPlaylist, e.IdUser }, "uq_saved_playlists_id_playlist_id_user").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.IdPlaylist).HasColumnName("id_playlist");
             entity.Property(e => e.IdUser).HasColumnName("id_user");
 
@@ -511,7 +511,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.Name, "uq_tracks_name").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.Country).HasColumnName("country");
             entity.Property(e => e.CoverFileName).HasColumnName("cover_file_name");
             entity.Property(e => e.CreatedAt)
@@ -549,7 +549,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.IdTrack, "IX_tracks_authors_id_track");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.IdAuthor).HasColumnName("id_author");
             entity.Property(e => e.IdTrack).HasColumnName("id_track");
 
@@ -572,7 +572,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.IdTrack, e.IdGenre }, "uq_track_genres").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.IdGenre).HasColumnName("id_genre");
             entity.Property(e => e.IdTrack).HasColumnName("id_track");
 
@@ -591,7 +591,7 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("types_notifications", "users");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.TypeName).HasColumnName("type_name");
         });
 
@@ -601,7 +601,7 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("types_report", "moderation");
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.TypeName).HasColumnName("type_name");
         });
 
@@ -615,7 +615,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.Nickname, "uq_users_nickname").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.AvatarFileName).HasColumnName("avatar_file_name");
             entity.Property(e => e.Country).HasColumnName("country");
             entity.Property(e => e.CreatedAt)
@@ -655,7 +655,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.IdUser, e.IdTrack }, "uk_users_history").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.IdTrack).HasColumnName("id_track");
             entity.Property(e => e.IdUser).HasColumnName("id_user");
             entity.Property(e => e.ListeningAt)
@@ -682,7 +682,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.IdUser, e.IdSubscriber }, "uq_users_subs_id_user_id_subscriber").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             entity.Property(e => e.IdSubscriber).HasColumnName("id_subscriber");
             entity.Property(e => e.IdUser).HasColumnName("id_user");
             entity.Property(e => e.SubscribedAt)

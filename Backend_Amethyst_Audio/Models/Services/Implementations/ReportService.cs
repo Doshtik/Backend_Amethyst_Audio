@@ -1,8 +1,8 @@
 using AutoMapper;
-using Backend_Amethyst_Audio.Data;
+using Backend_Amethyst_Audio.Models.Data;
 using Backend_Amethyst_Audio.DTO.Reports;
 using Backend_Amethyst_Audio.DTO.Reports.ReportAnswer;
-using Backend_Amethyst_Audio.Entities;
+using Backend_Amethyst_Audio.Models.Entities;
 using Backend_Amethyst_Audio.Services.Abstractions;
 using Microsoft.EntityFrameworkCore;
 

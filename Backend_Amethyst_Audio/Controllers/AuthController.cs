@@ -76,25 +76,32 @@ public class AuthController : ControllerBase
         }
     }
 
-    /*
-     * Сделать, всё-таки посторонний вход, или нет
-     */
-    [HttpGet("login/{provider}")]
-    public async Task<IActionResult> ExternalLoginAsync(string provider, [FromBody] LoginDto dto)
+    [HttpPost("external-login")]
+    public async Task<IActionResult> ExternalLoginAsync([FromBody] ExternalLoginDto dto)
     {
-        _logger.LogInformation("[Info] External login attempt. Provider={Provider}, Email={Email}", 
-            provider, dto.Email);
-        
         try
         {
-            _logger.LogWarning("[Warn] External login via {Provider} is not implemented yet", provider);
-            //TODO: Implement external login logic
-            return StatusCode(501, new { error = "Not implemented" });
+            _logger.LogInformation("[Info] External login attempt. Provider={Provider}", dto.Provider);
+        
+            var result = await _userService.ExternalLoginAsync(dto);
+        
+            _logger.LogInformation("[Info] External login successful. UserId={UserId}", result.Id);
+            return Ok(result);
         }
-        catch (Exception e)
+        catch (NotSupportedException ex)
         {
-            _logger.LogError(e, "[Error] External login failed. Provider={Provider}", provider);
-            return StatusCode(500, new { error = "External provider error" });
+            _logger.LogWarning("[Warn] Unsupported provider. Provider={Provider}", dto.Provider);
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning("[Warn] Invalid external token. Provider={Provider}", dto.Provider);
+            return Unauthorized(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Error] External login failed. Provider={Provider}", dto.Provider);
+            return StatusCode(500, new { error = "Internal server error" });
         }
     }
 
@@ -129,7 +136,7 @@ public class AuthController : ControllerBase
         
         try
         {
-            // TODO: Revoke refresh token in DB
+            await _userService.LogoutAsync(long.Parse(userId));
             _logger.LogInformation("[Info] User logged out successfully. UserId={UserId}", userId);
             return Ok(new { message = "Logged out" });
         }

@@ -51,16 +51,16 @@ public class RecommendationController : ControllerBase
     /// </summary>
     [HttpGet("query")]
     [Authorize]
-    public async Task<IActionResult> GetPersonalizedRecommendationsAsync([FromBody] PageMyRecordPersonalizedDto dto)
+    public async Task<IActionResult> GetPersonalizedRecommendationsAsync([FromBody] PageResonanceDto recommendationsDto)
     {
         var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
         try
         {
             _logger.LogInformation("[Info] Personalized recommendations request. UserId={UserId}, Mood={Mood}, Pace={Pace}, Country={Country}", 
-                userId, dto.MoodName ?? "any", dto.PaceName ?? "any", dto.Country ?? "any");
+                userId, recommendationsDto.MoodName ?? "any", recommendationsDto.PaceName ?? "any", recommendationsDto.Country ?? "any");
             
-            List<TrackInfoDto> tracks = await _trackService.GetPersonalizedRecommendationsAsync(dto, userId);
+            List<TrackInfoDto> tracks = await _trackService.GetPersonalizedRecommendationsAsync(recommendationsDto, userId);
             
             _logger.LogInformation("[Info] Recommendations generated. UserId={UserId}, Count={Count}", 
                 userId, tracks.Count);

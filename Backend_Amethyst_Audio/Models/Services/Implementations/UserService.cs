@@ -77,6 +77,8 @@ public class UserService : IUserService
 
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
+        _db.Libraries.Add(new Library { IdUser = user.Id });
+        await _db.SaveChangesAsync();
         
         _logger.LogInformation("[Info] User created. UserId={UserId}, Email={Email}", user.Id, user.Email);
 
@@ -113,6 +115,90 @@ public class UserService : IUserService
         UserInfoDto userDto = _mapper.Map<UserInfoDto>(user);
         userDto.Token = _tokenService.GenerateJwtToken(user);
         return userDto;
+    }
+
+    public async Task<UserInfoDto> ExternalLoginAsync(ExternalLoginDto dto)
+    {
+        _logger.LogInformation("[Info] Processing external login. Provider={Provider}", dto.Provider);
+
+        // Token validation
+        var externalData = await _tokenService.ValidateExternalTokenAsync(dto.Provider, dto.Token);
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        
+        try
+        {
+            // Get Entity from DB
+            var authUser = await _db.OauthUsers
+                .Include(au => au.IdUser)
+                .Include(au => au.IdProvider)
+                .FirstOrDefaultAsync(au => au.IdProviderNavigation.ProviderName == dto.Provider && 
+                                           au.ExternalId == externalData.ExternalId);
+
+            User user;
+            if (authUser == null)
+            {
+                // Creating a new User
+                user = new User
+                {
+                    Nickname = externalData.DisplayName ?? $"user_{Guid.NewGuid().ToString()[..8]}",
+                    Email = externalData.Email ?? $"ext_{dto.Provider}_{externalData.ExternalId}@local"
+                };
+                
+                var randomPassword = GenerateSecurePassword();
+                var hasher = new PasswordHasher<User>();
+                user.PasswordHash = hasher.HashPassword(user, randomPassword);
+                
+                _db.Users.Add(user);
+                await _db.SaveChangesAsync();
+
+                // Check provider existing
+                var provider = await _db.OauthProviders
+                    .FirstOrDefaultAsync(p => p.ProviderName == dto.Provider)
+                    ?? throw new InvalidOperationException($"Provider {dto.Provider} is not registered in DB");
+
+                // Creating a new AuthUser
+                authUser = new AuthUser
+                {
+                    IdUser = user.Id,
+                    IdProvider = provider.Id,
+                    ExternalId = externalData.ExternalId
+                };
+                
+                _db.OauthUsers.Add(authUser);
+                await _db.SaveChangesAsync();
+            }
+            else
+            {
+                user = authUser.IdUserNavigation;
+            }
+
+            await transaction.CommitAsync();
+
+            // 4. Маппинг и генерация внутреннего JWT
+            var result = _mapper.Map<UserInfoDto>(user);
+            result.Token = _tokenService.GenerateJwtToken(user);
+            return result;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+    
+    private static string GenerateSecurePassword(int length = 24)
+    {
+        const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_";
+        var result = new char[length];
+        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        var buffer = new byte[length];
+        rng.GetBytes(buffer);
+    
+        for (int i = 0; i < length; i++)
+            result[i] = chars[buffer[i] % chars.Length];
+        
+        return new string(result);
     }
 
     public async Task LogoutAsync(long userId)
