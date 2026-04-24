@@ -454,17 +454,17 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<string>("Discription")
+                    b.Property<string>("Description")
                         .HasColumnType("text")
-                        .HasColumnName("discription");
-
-                    b.Property<short>("IdAccessType")
-                        .HasColumnType("smallint")
-                        .HasColumnName("id_access_type");
+                        .HasColumnName("description");
 
                     b.Property<long>("IdUser")
                         .HasColumnType("bigint")
                         .HasColumnName("id_user");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_public");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -479,8 +479,6 @@ namespace Backend_Amethyst_Audio.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_playlists_id");
-
-                    b.HasIndex("IdAccessType");
 
                     b.HasIndex("IdUser");
 
@@ -830,26 +828,6 @@ namespace Backend_Amethyst_Audio.Migrations
                         .IsUnique();
 
                     b.ToTable("tracks_genres", "content");
-                });
-
-            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.TypesAccess", b =>
-                {
-                    b.Property<short>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
-
-                    b.Property<string>("TypeName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("type_name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_types_access_id");
-
-                    b.ToTable("types_access", "collections");
                 });
 
             modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.TypesNotification", b =>
@@ -1212,21 +1190,12 @@ namespace Backend_Amethyst_Audio.Migrations
 
             modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.Playlist", b =>
                 {
-                    b.HasOne("Backend_Amethyst_Audio.Models.Entities.TypesAccess", "IdAccessTypeNavigation")
-                        .WithMany("Playlists")
-                        .HasForeignKey("IdAccessType")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_playlists_id_access_type");
-
                     b.HasOne("Backend_Amethyst_Audio.Models.Entities.User", "IdUserNavigation")
                         .WithMany("Playlists")
                         .HasForeignKey("IdUser")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_playlists_id_user");
-
-                    b.Navigation("IdAccessTypeNavigation");
 
                     b.Navigation("IdUserNavigation");
                 });
@@ -1526,11 +1495,6 @@ namespace Backend_Amethyst_Audio.Migrations
                     b.Navigation("TracksGenres");
 
                     b.Navigation("UsersHistories");
-                });
-
-            modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.TypesAccess", b =>
-                {
-                    b.Navigation("Playlists");
                 });
 
             modelBuilder.Entity("Backend_Amethyst_Audio.Models.Entities.TypesNotification", b =>
