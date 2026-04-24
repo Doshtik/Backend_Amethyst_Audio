@@ -120,10 +120,44 @@ public class PlaylistService : IPlaylistService
             playlist.Name = dto.Name;
         }
         
+        if (dto.AddedTrackList?.Any() is true)
+        {
+            foreach (TrackInfoDto trackDto in dto.AddedTrackList)
+            {
+                if (!_db.PlaylistsTracks.Any(t => 
+                        t.IdTrack == trackDto.Id &&
+                        t.IdPlaylist == id))
+                {
+                    playlist.PlaylistsTracks.Add(new PlaylistsTrack 
+                    { 
+                        IdTrack = trackDto.Id, 
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+        }
+        
+        if (dto.RemovedTrackList?.Any() is true)
+        {
+            List<Track> tracksToRemove = _mapper.Map<List<Track>>(dto.RemovedTrackList);
+
+            foreach (Track trackToRemove in tracksToRemove)
+            {
+                PlaylistsTrack? track = await _db.PlaylistsTracks
+                    .Where(x => x.IdTrack == trackToRemove.Id && x.IdPlaylist == id)
+                    .FirstOrDefaultAsync();
+                if (track is not null)
+                {
+                    playlist.PlaylistsTracks.Remove(track);
+                }
+            }
+        }
+        
         if (dto.Description != null)
             playlist.Description = dto.Description;
         
-        playlist.IsPublic = dto.IsPublic;
+        if (dto.IsPublic.HasValue)
+            playlist.IsPublic = (bool)dto.IsPublic;
         playlist.UpdatedAt = DateTime.UtcNow;
         
         _db.Playlists.Update(playlist);

@@ -23,10 +23,18 @@ public class SearchController : ControllerBase
         _playlistService = playlistService;
     }
 
+    [HttpGet("genres")]
     public async Task<IActionResult> GetGenres()
     {
         GenreInfoDto dto = await _trackService.GetListGenresAsync();
         return Ok(dto);
+    }
+
+    [HttpGet("genres/{genreName}")]
+    public async Task<IActionResult> GetListByGenre(string genreName)
+    {
+        List<TrackInfoDto> tracks = await _trackService.GetListByGenreAsync(genreName);
+        return Ok(tracks);
     }
 
     [HttpGet("{searchLine}")]

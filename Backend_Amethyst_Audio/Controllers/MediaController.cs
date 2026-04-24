@@ -16,7 +16,7 @@ public class MediaController : ControllerBase
         _logger = logger;
     }
     
-    [HttpGet("/tracks/{id}")]
+    [HttpGet("tracks/audio/{id}")]
     public async Task<IActionResult> GetTrackFileAsync(int id)
     {
         try
@@ -40,7 +40,7 @@ public class MediaController : ControllerBase
         }
     }
 
-    [HttpGet("/tracks/covers/{id}")]
+    [HttpGet("tracks/covers/{id}")]
     public async Task<IActionResult> GetTrackCoverAsync(int id)
     {
         try
@@ -64,7 +64,7 @@ public class MediaController : ControllerBase
         }
     }
 
-    [HttpGet("/playlists/covers/{id}")]
+    [HttpGet("playlists/covers/{id}")]
     public async Task<IActionResult> GetPlaylistCoverAsync(int id)
     {
         try
@@ -88,7 +88,7 @@ public class MediaController : ControllerBase
         }
     }
 
-    [HttpGet("/albums/covers/{id}")]
+    [HttpGet("albums/covers/{id}")]
     public async Task<IActionResult> GetAlbumCoverAsync(int id)
     {
         try
@@ -112,7 +112,7 @@ public class MediaController : ControllerBase
         }
     }
 
-    [HttpGet("/users/avatars/{id}")]
+    [HttpGet("users/avatars/{id}")]
     public async Task<IActionResult> GetUserAvatarAsync(int id)
     {
         try
@@ -136,7 +136,7 @@ public class MediaController : ControllerBase
         }
     }
 
-    [HttpGet("/users/headers/{id}")]
+    [HttpGet("users/headers/{id}")]
     public async Task<IActionResult> GetUserHeaderAsync(int id)
     {
         try

@@ -9,11 +9,11 @@ namespace Backend_Amethyst_Audio.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ReportController : ControllerBase
+public class ReportsController : ControllerBase
 {
     private readonly IReportService _reportService;
 
-    public ReportController(IReportService reportService)
+    public ReportsController(IReportService reportService)
     {
         _reportService = reportService;
     }

@@ -63,7 +63,7 @@ public class AlbumsController : ControllerBase
 
     [HttpGet("user/{userId}")]
     [Authorize]
-    public async Task<IActionResult> GetByUserIdAsync(long userId)
+    public async Task<IActionResult> GetListByUserIdAsync(long userId)
     {
         var currentUserId = long.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
         
@@ -103,9 +103,9 @@ public class AlbumsController : ControllerBase
         }
     }
 
-    [HttpPut]
+    [HttpPut("{id}")]
     [Authorize]
-    public async Task<IActionResult> UpdateAsync([FromBody] ChangeAlbumInfoDto dto)
+    public async Task<IActionResult> UpdateAsync(long id, [FromBody] ChangeAlbumInfoDto dto)
     {
         _logger.LogDebug("[Debug] Request to update album. DTO: {@Dto}", dto);
         try
@@ -144,48 +144,50 @@ public class AlbumsController : ControllerBase
         }
     }
 
-    [HttpPost("save/{idUser}/{idAlbum}")]
+    [HttpPost("{id}/save")]
     [Authorize]
-    public async Task<IActionResult> SaveAlbumAsync(long idUser, long idAlbum)
+    public async Task<IActionResult> SaveAlbumAsync(long id)
     {
-        _logger.LogDebug("[Debug] Request to save album {AlbumId} for user {UserId}", idAlbum, idUser);
+        var userId = int.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
+        _logger.LogDebug("[Debug] Request to save album {AlbumId} for user {UserId}", id, userId);
         try
         {
-            await _albumService.SaveAlbumAsync(idUser, idAlbum);
-            _logger.LogInformation("[Info] Successfully saved album {AlbumId} for user {UserId}", idAlbum, idUser);
+            await _albumService.SaveAlbumAsync(userId, id);
+            _logger.LogInformation("[Info] Successfully saved album {AlbumId} for user {UserId}", id, userId);
             return Ok();
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("[Warn] Failed to save album {AlbumId} for user {UserId}: {Message}", idAlbum, idUser, ex.Message);
+            _logger.LogWarning("[Warn] Failed to save album {AlbumId} for user {UserId}: {Message}", id, userId, ex.Message);
             return Conflict(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Error] Unexpected error occurred while saving album {AlbumId} for user {UserId}", idAlbum, idUser);
+            _logger.LogError(ex, "[Error] Unexpected error occurred while saving album {AlbumId} for user {UserId}", id, userId);
             return Problem(statusCode: 500, title: "Internal Server Error", detail: "An error occurred while processing your request.");
         }
     }
 
-    [HttpDelete("save/{idUser}/{idAlbum}")]
+    [HttpDelete("{id}/save")]
     [Authorize]
-    public async Task<IActionResult> UnsaveAlbumAsync(long idUser, long idAlbum)
+    public async Task<IActionResult> UnsaveAlbumAsync(long id)
     {
-        _logger.LogDebug("[Debug] Request to unsave album {AlbumId} for user {UserId}", idAlbum, idUser);
+        var userId = int.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
+        _logger.LogDebug("[Debug] Request to unsave album {AlbumId} for user {UserId}", id, userId);
         try
         {
-            await _albumService.UnsaveAlbumAsync(idUser, idAlbum);
-            _logger.LogInformation("[Info] Successfully unsaved album {AlbumId} for user {UserId}", idAlbum, idUser);
+            await _albumService.UnsaveAlbumAsync(userId, id);
+            _logger.LogInformation("[Info] Successfully unsaved album {AlbumId} for user {UserId}", id, userId);
             return NoContent();
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning("[Warn] Failed to unsave album {AlbumId} for user {UserId}: {Message}", idAlbum, idUser, ex.Message);
+            _logger.LogWarning("[Warn] Failed to unsave album {AlbumId} for user {UserId}: {Message}", id, userId, ex.Message);
             return NotFound(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Error] Unexpected error occurred while unsaving album {AlbumId} for user {UserId}", idAlbum, idUser);
+            _logger.LogError(ex, "[Error] Unexpected error occurred while unsaving album {AlbumId} for user {UserId}", id, userId);
             return Problem(statusCode: 500, title: "Internal Server Error", detail: "An error occurred while processing your request.");
         }
     }

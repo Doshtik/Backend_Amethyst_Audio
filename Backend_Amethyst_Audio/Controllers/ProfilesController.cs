@@ -120,7 +120,7 @@ public class ProfilesController : ControllerBase
     {
         var currentUserId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
-        if (currentUserId != id.ToString() && !User.IsInRole("Admin"))
+        if (currentUserId != id.ToString())
         {
             _logger.LogWarning("[Warn] Unauthorized password change attempt. CurrentUserId={CurrentId}, TargetUserId={TargetId}", 
                 currentUserId, id);
@@ -164,7 +164,7 @@ public class ProfilesController : ControllerBase
     {
         var currentUserId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
-        if (currentUserId != id.ToString() && !User.IsInRole("Admin"))
+        if (currentUserId != id.ToString())
         {
             _logger.LogWarning("[Warn] Unauthorized delete attempt. CurrentUserId={CurrentId}, TargetUserId={TargetId}", 
                 currentUserId, id);

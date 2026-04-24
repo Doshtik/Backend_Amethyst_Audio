@@ -140,7 +140,7 @@ public class PlaylistsController : ControllerBase
     {
         long? userId = long.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
         
-        if (userId is not null)
+        if (userId is null)
         {
             _logger.LogWarning("[Warn] Playlist creation attempt without valid user claim");
             return Unauthorized(new { error = "Authentication required" });
