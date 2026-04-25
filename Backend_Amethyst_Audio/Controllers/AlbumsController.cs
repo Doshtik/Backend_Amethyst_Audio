@@ -87,14 +87,15 @@ public class AlbumsController : ControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateAsync([FromBody] CreateAlbumDto dto)
+    public async Task<IActionResult> CreateAsync([FromForm] CreateAlbumDto dto)
     {
+        var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         _logger.LogDebug("[Debug] Request to create a new album. DTO: {@Dto}", dto);
         try
         {
-            var album = await _albumService.CreateAsync(dto);
+            AlbumInfoDto album = await _albumService.CreateAsync(long.Parse(userId), dto);
             _logger.LogInformation("[Info] Successfully created album {AlbumId}", album.Id);
-            return CreatedAtAction(nameof(CreateAsync), new { albumId = album.Id }, album);
+            return Ok(album);
         }
         catch (Exception ex)
         {

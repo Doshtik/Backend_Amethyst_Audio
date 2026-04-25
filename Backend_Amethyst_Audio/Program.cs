@@ -55,9 +55,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Issuer"]).ToString(), // Кто выпустил
+            ValidIssuer = builder.Configuration["Jwt:Issuer"], // Кто выпустил
             ValidateAudience = true,
-            ValidAudience = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Audience"]).ToString(), // Для кого
+            ValidAudience = builder.Configuration["Jwt:Audience"], // Для кого
             ValidateLifetime = true, // Не просрочен ли
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
             ValidateIssuerSigningKey = true // Проверка подписи ключом

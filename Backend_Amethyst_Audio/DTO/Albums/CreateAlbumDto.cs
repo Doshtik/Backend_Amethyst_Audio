@@ -9,4 +9,6 @@ public class CreateAlbumDto
 
     [Required]
     public IFormFile CoverFile { get; set; }
+    [Required]
+    public List<IFormFile> Tracks { get; set; }
 }

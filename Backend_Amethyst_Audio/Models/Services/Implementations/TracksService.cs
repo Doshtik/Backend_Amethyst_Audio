@@ -38,7 +38,6 @@ public class TracksService : ITrackService
         var track = await _db.Tracks
             .AsNoTracking()
             .Include(p => p.PlaylistsTracks)
-                .ThenInclude(pt => pt.IdTrackNavigation)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (track is null)

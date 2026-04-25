@@ -29,7 +29,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<string>("CoverFileName")
                         .IsRequired()
@@ -66,7 +66,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<long>("IdAlbum")
                         .HasColumnType("bigint")
@@ -77,7 +77,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnName("id_author");
 
                     b.HasKey("Id")
-                        .HasName("pk_album_authors_id");
+                        .HasName("pk_albums_authors_id");
 
                     b.HasIndex("IdAuthor");
 
@@ -94,7 +94,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -128,7 +128,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
 
                     b.Property<long>("ExternalId")
                         .HasColumnType("bigint")
@@ -160,7 +160,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<short>("Id"));
 
                     b.Property<string>("ProviderName")
                         .IsRequired()
@@ -180,7 +180,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<long>("ExternalId")
                         .HasColumnType("bigint")
@@ -212,7 +212,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -278,7 +278,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<short>("Id"));
 
                     b.Property<string>("GenreName")
                         .IsRequired()
@@ -298,7 +298,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -332,7 +332,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<long>("IdUser")
                         .HasColumnType("bigint")
@@ -353,7 +353,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<short>("Id"));
 
                     b.Property<string>("MoodName")
                         .IsRequired()
@@ -373,7 +373,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Body")
                         .IsRequired()
@@ -422,7 +422,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<short>("Id"));
 
                     b.Property<string>("PaceName")
                         .IsRequired()
@@ -442,7 +442,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<string>("CoverFileName")
                         .HasColumnType("text")
@@ -492,7 +492,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -526,7 +526,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<short>("Id"));
 
                     b.Property<string>("ReasonName")
                         .IsRequired()
@@ -546,7 +546,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -554,7 +554,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<string>("Discription")
+                    b.Property<string>("Description")
                         .HasColumnType("text")
                         .HasColumnName("discription");
 
@@ -595,7 +595,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -633,7 +633,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<short>("Id"));
 
                     b.Property<string>("RoleName")
                         .IsRequired()
@@ -653,7 +653,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<long>("IdAlbum")
                         .HasColumnType("bigint")
@@ -664,7 +664,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnName("id_user");
 
                     b.HasKey("Id")
-                        .HasName("pk_album_users_id");
+                        .HasName("pk_saved_albums_id");
 
                     b.HasIndex("IdUser");
 
@@ -681,7 +681,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<long>("IdPlaylist")
                         .HasColumnType("bigint")
@@ -692,7 +692,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnName("id_user");
 
                     b.HasKey("Id")
-                        .HasName("pk_playlists_users_id");
+                        .HasName("pk_saved_playlists_id");
 
                     b.HasIndex("IdUser");
 
@@ -709,7 +709,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Country")
                         .HasColumnType("text")
@@ -782,7 +782,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<long>("IdAuthor")
                         .HasColumnType("bigint")
@@ -809,7 +809,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<short>("IdGenre")
                         .HasColumnType("smallint")
@@ -837,7 +837,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<short>("Id"));
 
                     b.Property<string>("TypeName")
                         .IsRequired()
@@ -857,7 +857,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<short>("Id"));
 
                     b.Property<string>("TypeName")
                         .IsRequired()
@@ -877,7 +877,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<string>("AvatarFileName")
                         .HasColumnType("text")
@@ -973,7 +973,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<long>("IdTrack")
                         .HasColumnType("bigint")
@@ -1011,7 +1011,7 @@ namespace Backend_Amethyst_Audio.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<long>("IdSubscriber")
                         .HasColumnType("bigint")

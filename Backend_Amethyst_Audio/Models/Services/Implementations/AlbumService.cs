@@ -2,6 +2,7 @@ using AutoMapper;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Models.Data;
 using Backend_Amethyst_Audio.Models.Entities;
+using Backend_Amethyst_Audio.Models.Enums;
 using Backend_Amethyst_Audio.Services.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,12 +11,14 @@ namespace Backend_Amethyst_Audio.Services.Implementations;
 public class AlbumService : IAlbumService
 {
     private readonly AppDbContext _db;
+    private readonly IMediaService _mediaService;
     private readonly ILogger<AlbumService> _logger;
     private readonly IMapper _mapper;
 
-    public AlbumService(AppDbContext db, ILogger<AlbumService> logger, IMapper mapper)
+    public AlbumService(AppDbContext db, IMediaService mediaService, ILogger<AlbumService> logger, IMapper mapper)
     {
         _db = db;
+        _mediaService = mediaService;
         _logger = logger;
         _mapper = mapper;
     }
@@ -43,15 +46,39 @@ public class AlbumService : IAlbumService
         return _mapper.Map<List<AlbumInfoDto>>(albums);
     }
 
-    public async Task<AlbumInfoDto> CreateAsync(CreateAlbumDto dto)
+    public async Task<AlbumInfoDto> CreateAsync(long userId, CreateAlbumDto dto)
     {
-        _logger.LogDebug("[Debug] Creating new album from DTO: {@Dto}", dto);
+        _logger.LogDebug("[Debug] Creating new album from DTO: {Dto}", dto);
         var albumEntity = _mapper.Map<Album>(dto);
         
-        albumEntity.CreatedAt = DateTime.Now;
-        albumEntity.UpdatedAt = DateTime.Now;
+        string coverFileName;
+        if (dto.CoverFile != null)
+        {
+            try
+            {
+                _logger.LogDebug("[Debug] Saving playlist cover file");
+                coverFileName = await _mediaService.SaveFileAsync(dto.CoverFile, FileTypes.Covers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Error] Failed to save media files for playlist '{Title}'", dto.Name);
+                throw new InvalidOperationException("Failed to upload media playlist. Database record was not created.", ex);
+            }
+        }
+        else
+        {
+            coverFileName = "default_cover.jpg";
+            _logger.LogDebug("[Debug] No cover file provided, using default: {FileName}", coverFileName);
+        }
+        
+        albumEntity.CoverFileName = coverFileName;
+        albumEntity.CreatedAt = DateTime.UtcNow;
+        albumEntity.UpdatedAt = DateTime.UtcNow;
         
         await _db.Albums.AddAsync(albumEntity);
+        await _db.SaveChangesAsync();
+        
+        await _db.AlbumsAuthors.AddAsync(new AlbumsAuthor { IdAlbum = albumEntity.Id, IdAuthor = userId });
         await _db.SaveChangesAsync();
         
         _logger.LogInformation("[Info] Successfully created album with ID {AlbumId}", albumEntity.Id);

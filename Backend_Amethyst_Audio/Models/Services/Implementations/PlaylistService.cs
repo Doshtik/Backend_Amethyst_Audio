@@ -2,6 +2,7 @@ using AutoMapper;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Models.Data;
 using Backend_Amethyst_Audio.Models.Entities;
+using Backend_Amethyst_Audio.Models.Enums;
 using Backend_Amethyst_Audio.Services.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,12 +11,14 @@ namespace Backend_Amethyst_Audio.Services.Implementations;
 public class PlaylistService : IPlaylistService
 {
     private readonly AppDbContext _db;
+    private readonly IMediaService _mediaService;
     private readonly IMapper _mapper;
     private readonly ILogger<PlaylistService> _logger;
     
-    public PlaylistService(AppDbContext db, IMapper mapper, ILogger<PlaylistService> logger)
+    public PlaylistService(AppDbContext db, IMediaService mediaService, IMapper mapper, ILogger<PlaylistService> logger)
     {
         _db = db;
+        _mediaService = mediaService;
         _mapper = mapper;
         _logger = logger;
     }
@@ -73,9 +76,30 @@ public class PlaylistService : IPlaylistService
             _logger.LogWarning("[Warn] Playlist name too long. Length={Length}", dto.Name.Length);
             throw new ArgumentException("Playlist name is too long");
         }
+        
+        string coverFileName;
+        if (dto.CoverFile != null)
+        {
+            try
+            {
+                _logger.LogDebug("[Debug] Saving playlist cover file");
+                coverFileName = await _mediaService.SaveFileAsync(dto.CoverFile, FileTypes.Covers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Error] Failed to save media files for playlist '{Title}'", dto.Name);
+                throw new InvalidOperationException("Failed to upload media playlist. Database record was not created.", ex);
+            }
+        }
+        else
+        {
+            coverFileName = "default_cover.jpg";
+            _logger.LogDebug("[Debug] No cover file provided, using default: {FileName}", coverFileName);
+        }
 
         var playlist = _mapper.Map<Playlist>(dto);
         playlist.IdUser = ownerId;
+        playlist.CoverFileName = coverFileName;
         playlist.CreatedAt = DateTime.UtcNow;
         playlist.UpdatedAt = DateTime.UtcNow;
         
@@ -158,7 +182,13 @@ public class PlaylistService : IPlaylistService
         
         if (dto.IsPublic.HasValue)
             playlist.IsPublic = (bool)dto.IsPublic;
-        playlist.UpdatedAt = DateTime.UtcNow;
+        
+        playlist.UpdatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+        if (playlist.CreatedAt.Kind != DateTimeKind.Utc)
+        {
+            playlist.CreatedAt = DateTime.SpecifyKind(playlist.CreatedAt, DateTimeKind.Utc);
+        }
         
         _db.Playlists.Update(playlist);
         await _db.SaveChangesAsync();

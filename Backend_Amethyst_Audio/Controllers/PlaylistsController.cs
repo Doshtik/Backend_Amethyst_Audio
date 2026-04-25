@@ -100,7 +100,7 @@ public class PlaylistsController : ControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateAsync([FromBody] CreatePlaylistDto dto)
+    public async Task<IActionResult> CreateAsync([FromForm] CreatePlaylistDto dto)
     {
         var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
@@ -119,7 +119,7 @@ public class PlaylistsController : ControllerBase
             
             _logger.LogInformation("[Info] Playlist created successfully. PlaylistId={PlaylistId}, Title={Title}", 
                 playlist.Id, dto.Name);
-            return CreatedAtAction(nameof(CreateAsync), new { id = playlist.Id }, playlist);
+            return Ok(playlist);
         }
         catch (ArgumentException e)
         {
@@ -136,7 +136,7 @@ public class PlaylistsController : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<IActionResult> UpdateAsync(long id, [FromBody] ChangePlaylistInfoDto dto) 
+    public async Task<IActionResult> UpdateAsync(long id, [FromForm] ChangePlaylistInfoDto dto) 
     {
         long? userId = long.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
         

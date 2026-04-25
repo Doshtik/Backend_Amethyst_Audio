@@ -72,7 +72,7 @@ public class ProfilesController : ControllerBase
         }
     }
 
-    [HttpGet("")]
+    [HttpGet("listeners-count/{userId}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetAmountOfListenersAsync(long userId)
     {
@@ -227,7 +227,7 @@ public class ProfilesController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetUserSavedPlaylistsAsync(long userId)
     {
-        var list = _playlistService.GetListSavedAsync(userId);
+        var list = await _playlistService.GetListSavedAsync(userId);
         return Ok(list);
     }
     
@@ -236,7 +236,7 @@ public class ProfilesController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetUserSavedAlbumsAsync(long userId)
     {
-        var list = _albumService.GetListSavedAsync(userId);
+        var list = await _albumService.GetListSavedAsync(userId);
         return Ok(list);
     }
     
@@ -244,7 +244,7 @@ public class ProfilesController : ControllerBase
     [Authorize]
     public async Task<IActionResult> FollowUserAsync([FromBody] FollowUserDto dto)
     {
-        var userIdClaim = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
     
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var currentUserId))
         {
