@@ -92,7 +92,6 @@ public class MediaService: IMediaService
             }
             else
             {
-                // Prevent path traversal attacks
                 _logger.LogWarning("[Warn] Absolute path deletion attempt blocked. FilePath={FilePath}", filePath);
                 throw new SecurityException("Absolute paths are not allowed for deletion");
             }

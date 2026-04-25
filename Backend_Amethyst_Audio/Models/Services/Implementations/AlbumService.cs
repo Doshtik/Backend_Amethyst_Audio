@@ -1,4 +1,6 @@
+using System.Text.Json;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Models.Data;
 using Backend_Amethyst_Audio.Models.Entities;
@@ -35,7 +37,12 @@ public class AlbumService : IAlbumService
         }
 
         _logger.LogDebug("[Debug] Successfully fetched album {AlbumId}", id);
-        return _mapper.Map<AlbumInfoDto>(album);
+        AlbumInfoDto resultDto = _mapper.Map<AlbumInfoDto>(album);
+        resultDto.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks.AsNoTracking()
+            .Where(x => x.IdAlbum == album.Id).Select(x => x.IdTrackNavigation).ToListAsync());
+        resultDto.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors.AsNoTracking()
+            .Where(x => x.IdAlbum == album.Id).Select(x => x.IdAuthorNavigation).ToListAsync());
+        return resultDto;
     }
 
     public async Task<List<AlbumInfoDto>> GetAllAsync()
@@ -43,13 +50,20 @@ public class AlbumService : IAlbumService
         _logger.LogDebug("[Debug] Fetching all albums");
         var albums = await _db.Albums.AsNoTracking().ToListAsync();
         _logger.LogInformation("[Info] Retrieved {Count} albums", albums.Count);
-        return _mapper.Map<List<AlbumInfoDto>>(albums);
+        List<AlbumInfoDto> resultDto = _mapper.Map<List<AlbumInfoDto>>(albums);
+        foreach (var album in resultDto)
+        {
+            album.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks.AsNoTracking()
+                .Where(x => x.IdAlbum == album.Id).Select(x => x.IdTrackNavigation).ToListAsync());
+            album.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors.AsNoTracking()
+                .Where(x => x.IdAlbum == album.Id).Select(x => x.IdAuthorNavigation).ToListAsync());
+        }
+        return resultDto;
     }
 
     public async Task<AlbumInfoDto> CreateAsync(long userId, CreateAlbumDto dto)
     {
         _logger.LogDebug("[Debug] Creating new album from DTO: {Dto}", dto);
-        var albumEntity = _mapper.Map<Album>(dto);
         
         string coverFileName;
         if (dto.CoverFile != null)
@@ -71,38 +85,177 @@ public class AlbumService : IAlbumService
             _logger.LogDebug("[Debug] No cover file provided, using default: {FileName}", coverFileName);
         }
         
+        var authorIds = JsonSerializer.Deserialize<List<long>>(dto.AuthorIdListJson);
+        var trackIds = JsonSerializer.Deserialize<List<long>>(dto.TrackIdListJson);
+
+        var existingAuthors = await _db.Users
+            .Where(u => authorIds.Contains(u.Id))
+            .Select(u => u.Id)
+            .ToHashSetAsync();
+    
+        var missingAuthors = authorIds.Except(existingAuthors);
+        if (missingAuthors.Any())
+            throw new KeyNotFoundException($"Авторы не найдены: {string.Join(", ", missingAuthors)}");
+
+        var existingTracks = await _db.Tracks
+            .Where(t => trackIds.Contains(t.Id))
+            .Select(t => t.Id)
+            .ToHashSetAsync();
+    
+        var missingTracks = trackIds.Except(existingTracks);
+        if (missingTracks.Any())
+            throw new KeyNotFoundException($"Треки не найдены: {string.Join(", ", missingTracks)}");
+
+        var albumEntity = _mapper.Map<Album>(dto);
         albumEntity.CoverFileName = coverFileName;
         albumEntity.CreatedAt = DateTime.UtcNow;
         albumEntity.UpdatedAt = DateTime.UtcNow;
-        
+
         await _db.Albums.AddAsync(albumEntity);
         await _db.SaveChangesAsync();
-        
-        await _db.AlbumsAuthors.AddAsync(new AlbumsAuthor { IdAlbum = albumEntity.Id, IdAuthor = userId });
+
+        foreach (var authorId in authorIds)
+        {
+            await _db.AlbumsAuthors.AddAsync(new AlbumsAuthor 
+            { 
+                IdAlbum = albumEntity.Id, 
+                IdAuthor = authorId
+            });
+        }
+
+        foreach (var trackId in trackIds)
+        {
+            await _db.AlbumsTracks.AddAsync(new AlbumsTrack 
+            { 
+                IdAlbum = albumEntity.Id, 
+                IdTrack = trackId,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
         await _db.SaveChangesAsync();
         
         _logger.LogInformation("[Info] Successfully created album with ID {AlbumId}", albumEntity.Id);
-        return _mapper.Map<AlbumInfoDto>(albumEntity);
+        AlbumInfoDto resultDto = _mapper.Map<AlbumInfoDto>(albumEntity);
+        resultDto.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks.AsNoTracking()
+            .Where(x => x.IdAlbum == albumEntity.Id).Select(x => x.IdTrackNavigation).ToListAsync());
+        resultDto.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors.AsNoTracking()
+            .Where(x => x.IdAlbum == albumEntity.Id).Select(x => x.IdAuthorNavigation).ToListAsync());
+        return resultDto;
     }
 
     public async Task<AlbumInfoDto> UpdateAsync(ChangeAlbumInfoDto dto)
     {
-        _logger.LogDebug("[Debug] Updating album with DTO: {@Dto}", dto);
-        var albumEntity = _mapper.Map<Album>(dto);
+        var albumEntity = await _db.Albums
+            .FirstOrDefaultAsync(a => a.Id == dto.Id)
+            ?? throw new KeyNotFoundException($"Альбом с ID {dto.Id} не найден");
+
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+            albumEntity.Name = dto.Name;
         
-        albumEntity.UpdatedAt = DateTime.Now;
-        
+        albumEntity.UpdatedAt = DateTime.UtcNow;
+
+        if (dto.CoverFile != null)
+        {
+            if (!string.IsNullOrEmpty(albumEntity.CoverFileName) && 
+                albumEntity.CoverFileName != "default_cover.jpg")
+            {
+                await _mediaService.DeleteFileAsync(albumEntity.CoverFileName);
+            }
+            
+            albumEntity.CoverFileName = await _mediaService.SaveFileAsync(dto.CoverFile, FileTypes.Covers);
+        }
+
         _db.Albums.Update(albumEntity);
         await _db.SaveChangesAsync();
-        
+
+        if (!string.IsNullOrWhiteSpace(dto.AddedTrackList))
+        {
+            var addedTrackIds = JsonSerializer.Deserialize<List<long>>(dto.AddedTrackList);
+            
+            var existingTracks = await _db.Tracks
+                .Where(t => addedTrackIds.Contains(t.Id))
+                .Select(t => t.Id)
+                .ToHashSetAsync();
+            
+            var missingTracks = addedTrackIds.Except(existingTracks);
+            if (missingTracks.Any())
+                throw new KeyNotFoundException($"Треки не найдены: {string.Join(", ", missingTracks)}");
+
+            var existingAlbumTrackIds = await _db.AlbumsTracks
+                .Where(at => at.IdAlbum == albumEntity.Id)
+                .Select(at => at.IdTrack)
+                .ToHashSetAsync();
+
+            foreach (var trackId in addedTrackIds)
+            {
+                if (!existingAlbumTrackIds.Contains(trackId))
+                {
+                    await _db.AlbumsTracks.AddAsync(new AlbumsTrack
+                    {
+                        IdAlbum = albumEntity.Id,
+                        IdTrack = trackId,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+        }
+
+        // 6. Обработка удалённых треков
+        if (!string.IsNullOrWhiteSpace(dto.RemovedTrackList))
+        {
+            var removedTrackIds = JsonSerializer.Deserialize<List<long>>(dto.RemovedTrackList);
+            
+            var tracksToRemove = await _db.AlbumsTracks
+                .Where(at => at.IdAlbum == albumEntity.Id && removedTrackIds.Contains(at.IdTrack))
+                .ToListAsync();
+            
+            _db.AlbumsTracks.RemoveRange(tracksToRemove);
+        }
+
+        // 7. Финальное сохранение изменений связей
+        await _db.SaveChangesAsync();
+
+        // 8. Формируем ответ
         _logger.LogInformation("[Info] Successfully updated album {AlbumId}", albumEntity.Id);
-        return _mapper.Map<AlbumInfoDto>(albumEntity);
+        return await GetAlbumInfoDtoAsync(albumEntity.Id);
+    }
+
+    // Хелпер для формирования DTO (чтобы не дублировать код из CreateAsync)
+    private async Task<AlbumInfoDto> GetAlbumInfoDtoAsync(long albumId)
+    {
+        var album = await _db.Albums.AsNoTracking()
+                        .FirstOrDefaultAsync(a => a.Id == albumId)
+                    ?? throw new KeyNotFoundException($"Альбом {albumId} не найден");
+    
+        var resultDto = _mapper.Map<AlbumInfoDto>(album);
+    
+        resultDto.TrackList = await _db.AlbumsTracks.AsNoTracking()
+            .Where(x => x.IdAlbum == albumId)
+            .Select(x => x.IdTrackNavigation)
+            .ProjectTo<TrackInfoDto>(_mapper.ConfigurationProvider)
+            .ToListAsync();
+        
+        resultDto.AuthorList = await _db.AlbumsAuthors.AsNoTracking()
+            .Where(x => x.IdAlbum == albumId)
+            .Select(x => x.IdAuthorNavigation)
+            .ProjectTo<UserInfoDto>(_mapper.ConfigurationProvider)
+            .ToListAsync();
+    
+        return resultDto;
     }
 
     public async Task DeleteAsync(long id)
     {
         _logger.LogDebug("[Debug] Attempting to delete album {AlbumId}", id);
+        
         var albumEntity = await _db.Albums.FindAsync(id);
+        
+        var tracksInAlbum = _db.AlbumsTracks
+            .Where(x => x.IdAlbum == id);
+        
+        var usersInAlbum = _db.AlbumsAuthors
+            .Where(x => x.IdAlbum == id);
 
         if (albumEntity is null)
         {
@@ -110,6 +263,22 @@ public class AlbumService : IAlbumService
             throw new KeyNotFoundException($"Album with ID {id} was not found.");
         }
 
+        try
+        {
+            if (!string.IsNullOrEmpty(albumEntity.CoverFileName))
+            {
+                await _mediaService.DeleteFileAsync(albumEntity.CoverFileName);
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Error] Failed to delete album cover. {AlbumId}", id);
+            throw;
+        }
+        
+
+        _db.AlbumsTracks.RemoveRange(tracksInAlbum);
+        _db.AlbumsAuthors.RemoveRange(usersInAlbum);
         _db.Albums.Remove(albumEntity);
         await _db.SaveChangesAsync();
         _logger.LogInformation("[Info] Successfully deleted album {AlbumId}", id);

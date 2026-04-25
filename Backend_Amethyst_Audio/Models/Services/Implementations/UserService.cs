@@ -2,6 +2,7 @@ using AutoMapper;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Models.Data;
 using Backend_Amethyst_Audio.Models.Entities;
+using Backend_Amethyst_Audio.Models.Enums;
 using Backend_Amethyst_Audio.Services.Abstractions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,7 @@ public class UserService : IUserService
 {
     private readonly AppDbContext _db;
     private readonly ITokenService _tokenService;
+    private readonly IMediaService _mediaService;
     private readonly IMapper _mapper;
     private readonly ILogger<UserService> _logger;
     private IUserService _userServiceImplementation;
@@ -19,11 +21,13 @@ public class UserService : IUserService
     public UserService(
         AppDbContext db, 
         ITokenService tokenService, 
+        IMediaService mediaService,
         IMapper mapper, 
         ILogger<UserService> logger)
     {
         _db = db;
         _tokenService = tokenService;
+        _mediaService = mediaService;
         _mapper = mapper;
         _logger = logger;
     }
@@ -239,7 +243,24 @@ public class UserService : IUserService
             }
         }
         
+        string avatarFileName, headerFileName;
+        try
+        {
+            _logger.LogDebug("[Debug] Saving user avatar file...");
+            avatarFileName = await _mediaService.SaveFileAsync(dto.AvatarFile, FileTypes.Avatars);
+
+            _logger.LogDebug("[Debug] Saving user header file...");
+            headerFileName = await _mediaService.SaveFileAsync(dto.HeaderFile, FileTypes.Headers);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Error] Failed to save media files for User '{Nickname}'", dto.Nickname);
+            throw new InvalidOperationException("Failed to upload media files. Database record was not created.", ex);
+        }
+        
         _mapper.Map(dto, user);
+        user.AvatarFileName = avatarFileName;
+        user.HeaderFileName = headerFileName;
         await _db.SaveChangesAsync();
         
         _logger.LogInformation("[Info] User data updated. UserId={UserId}", id);
@@ -301,14 +322,8 @@ public class UserService : IUserService
         _logger.LogDebug("[Debug] Get user list by nickname. Nickname={Nickname}", nickname);
         
         List<User> users = await _db.Users
-            .Where(u => u.Nickname == nickname)
+            .Where(x => EF.Functions.Like(x.Nickname, $"%{nickname}%"))
             .ToListAsync();
-        
-        if (users.Count is 0)
-        {
-            _logger.LogWarning("[Warn] Users not found by nickname. Nickname={Nickname}", nickname);
-            throw new KeyNotFoundException("Users not found");
-        }
         
         return _mapper.Map<List<UserInfoDto>>(users);
     }

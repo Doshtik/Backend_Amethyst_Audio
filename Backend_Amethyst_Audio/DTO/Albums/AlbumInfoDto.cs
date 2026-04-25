@@ -8,6 +8,7 @@ public class AlbumInfoDto
 
     public string? CoverUrl { get; set; }
     
+    public List<UserInfoDto> AuthorList { get; set; } = null!;
+    
     public List<TrackInfoDto> TrackList { get; set; } = null!;
-    public List<IFormFile> Tracks { get; set; }
 }

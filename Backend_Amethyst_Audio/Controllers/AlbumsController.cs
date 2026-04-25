@@ -106,7 +106,7 @@ public class AlbumsController : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<IActionResult> UpdateAsync(long id, [FromBody] ChangeAlbumInfoDto dto)
+    public async Task<IActionResult> UpdateAsync(long id, [FromForm] ChangeAlbumInfoDto dto)
     {
         _logger.LogDebug("[Debug] Request to update album. DTO: {@Dto}", dto);
         try

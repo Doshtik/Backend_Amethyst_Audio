@@ -92,7 +92,7 @@ public class ProfilesController : ControllerBase
     
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<IActionResult> UpdateAsync(long id, [FromBody] ChangeUserInfoDto dto)
+    public async Task<IActionResult> UpdateAsync(long id, [FromForm] ChangeUserInfoDto dto)
     {
         var currentUserId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
         
