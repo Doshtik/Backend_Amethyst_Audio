@@ -1,3 +1,5 @@
+using System.Data;
+using System.Text.Json;
 using AutoMapper;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Models.Data;
@@ -30,6 +32,8 @@ public class PlaylistService : IPlaylistService
         
         Playlist? playlist = await _db.Playlists
             .AsNoTracking()
+            .Include(x => x.PlaylistsTracks)
+            .ThenInclude(x => x.IdTrackNavigation)
             .FirstOrDefaultAsync(p => p.Id == id);
 
         if (playlist == null)
@@ -50,6 +54,8 @@ public class PlaylistService : IPlaylistService
         
         var playlists = await _db.Playlists
             .AsNoTracking()
+            .Include(x => x.PlaylistsTracks)
+            .ThenInclude(x => x.IdTrackNavigation)
             .ToListAsync();
         
         var result = _mapper.Map<List<PlaylistInfoDto>>(playlists);
@@ -60,8 +66,11 @@ public class PlaylistService : IPlaylistService
 
     public async Task<PlaylistInfoDto> CreateAsync(CreatePlaylistDto dto, long ownerId)
     {
-        _logger.LogInformation("[Info] Creating playlist. OwnerId={OwnerId}, Title={Title}, IsPublic={IsPublic}", 
-            ownerId, dto.Name, dto.IsPublic);
+        List<long> tracksIds = JsonSerializer.Deserialize<List<long>>(dto.TracksIdList) 
+            ?? throw new NoNullAllowedException("Playlist must have tracks");
+        
+        _logger.LogInformation("[Info] Creating playlist. OwnerId={OwnerId}, Title={Title}, IsPublic={IsPublic}, TrackCount={TrackCount}", 
+            ownerId, dto.Name, dto.IsPublic, tracksIds.Count);
         
         // Playlist name validation
         if (string.IsNullOrWhiteSpace(dto.Name))
@@ -97,13 +106,25 @@ public class PlaylistService : IPlaylistService
             _logger.LogDebug("[Debug] No cover file provided, using default: {FileName}", coverFileName);
         }
 
-        var playlist = _mapper.Map<Playlist>(dto);
+        Playlist playlist = _mapper.Map<Playlist>(dto);
         playlist.IdUser = ownerId;
         playlist.CoverFileName = coverFileName;
         playlist.CreatedAt = DateTime.UtcNow;
         playlist.UpdatedAt = DateTime.UtcNow;
         
         await _db.Playlists.AddAsync(playlist);
+        await _db.SaveChangesAsync();
+
+        _logger.LogDebug("[Debug] Saving playlist tracks PlaylistId={PlaylistId}", playlist.Id);
+        foreach (long trackId in tracksIds)
+        {
+            _db.PlaylistsTracks.Add(new PlaylistsTrack
+            {
+                IdTrack = trackId, 
+                IdPlaylist = playlist.Id, 
+                CreatedAt = DateTime.UtcNow
+            });
+        }
         await _db.SaveChangesAsync();
         
         _logger.LogInformation("[Info] Playlist created successfully. PlaylistId={PlaylistId}, Title={Title}", 
@@ -116,6 +137,9 @@ public class PlaylistService : IPlaylistService
     {
         _logger.LogInformation("[Info] Update playlist request. PlaylistId={PlaylistId}, UserId={UserId}", 
             id, requestedBy);
+        
+        List<long> addedTracksIdList = JsonSerializer.Deserialize<List<long>>(dto.AddedTracksIdList) ?? new List<long>();
+        List<long> removedTracksIdList = JsonSerializer.Deserialize<List<long>>(dto.RemovedTracksIdList) ?? new List<long>();
         
         var playlist = await _db.Playlists.FirstOrDefaultAsync(p => p.Id == id);
         
@@ -144,32 +168,39 @@ public class PlaylistService : IPlaylistService
             playlist.Name = dto.Name;
         }
         
-        if (dto.AddedTrackList?.Any() is true)
+        if (addedTracksIdList.Count > 0)
         {
-            foreach (TrackInfoDto trackDto in dto.AddedTrackList)
+            foreach (long trackId in addedTracksIdList)
             {
                 if (!_db.PlaylistsTracks.Any(t => 
-                        t.IdTrack == trackDto.Id &&
+                        t.IdTrack == trackId &&
                         t.IdPlaylist == id))
                 {
                     playlist.PlaylistsTracks.Add(new PlaylistsTrack 
                     { 
-                        IdTrack = trackDto.Id, 
+                        IdTrack = trackId, 
                         CreatedAt = DateTime.UtcNow
                     });
                 }
             }
         }
         
-        if (dto.RemovedTrackList?.Any() is true)
+        if (removedTracksIdList.Count > 0)
         {
-            List<Track> tracksToRemove = _mapper.Map<List<Track>>(dto.RemovedTrackList);
-
-            foreach (Track trackToRemove in tracksToRemove)
+            foreach (long trackId in removedTracksIdList)
             {
+                Track? trackItem = await _db.Tracks.FirstOrDefaultAsync(t => t.Id == trackId);
+                
+                if (trackItem is null)
+                {
+                    _logger.LogWarning("[Warn] Track not found for remove. PlaylistId={PlaylistId}, TrackId={TrackId}", playlist.Id, trackId);
+                    continue;
+                }
+                
                 PlaylistsTrack? track = await _db.PlaylistsTracks
-                    .Where(x => x.IdTrack == trackToRemove.Id && x.IdPlaylist == id)
+                    .Where(x => x.IdTrack == trackItem.Id && x.IdPlaylist == id)
                     .FirstOrDefaultAsync();
+                
                 if (track is not null)
                 {
                     playlist.PlaylistsTracks.Remove(track);
@@ -234,6 +265,8 @@ public class PlaylistService : IPlaylistService
         
         var playlists = await _db.Playlists
             .AsNoTracking()
+            .Include(x => x.PlaylistsTracks)
+            .ThenInclude(x => x.IdTrackNavigation)
             .Where(x => x.IdUser == userId)
             .OrderByDescending(x => x.UpdatedAt)
             .ToListAsync();

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Models;
 using Backend_Amethyst_Audio.Services.Abstractions;
@@ -85,7 +86,8 @@ public class TracksController : ControllerBase
         _logger.LogDebug("[Debug] Request to create track. Title={Title}", dto.Name);
         try
         {
-            var result = await _trackService.CreateAsync(dto);
+            long userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var result = await _trackService.CreateAsync(dto, userId);
             _logger.LogInformation("[Info] Successfully created track {TrackId}", result.Id);
             return CreatedAtAction(nameof(GetById), new { trackId = result.Id }, result);
         }

@@ -17,7 +17,7 @@ public interface IUserService
     
     Task<List<UserInfoDto>> GetListByNicknameAsync(string nickname);
     
-    Task<int> GetListenersAmountAsync(long id);
+    Task<int> GetSubscriberAmountAsync(long id);
     
     Task FollowAsync(FollowUserDto dto);
     Task UnfollowAsync(FollowUserDto dto);

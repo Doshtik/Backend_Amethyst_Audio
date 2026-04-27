@@ -58,7 +58,7 @@ public class ProfilesController : ControllerBase
         try
         {
             _logger.LogInformation("[Info] Get all users request. RequestedBy={UserId}", 
-                User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) ?? "anonymous");
+                User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous");
             
             List<UserInfoDto> listDto = await _userService.GetAllAsync();
             
@@ -72,14 +72,14 @@ public class ProfilesController : ControllerBase
         }
     }
 
-    [HttpGet("listeners-count/{userId}")]
+    [HttpGet("sub-count/{userId}")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetAmountOfListenersAsync(long userId)
+    public async Task<IActionResult> GetAmountOfSubsAsync(long userId)
     {
         _logger.LogDebug("[Debug] Request to get amount of listeners by user Id: {Id}", userId);
         try
         { 
-            int amount = await _userService.GetListenersAmountAsync(userId);
+            int amount = await _userService.GetSubscriberAmountAsync(userId);
             _logger.LogInformation("[Info] Successfully retrieved {Amount} tracks", amount);
             return Ok(amount);
         }
@@ -94,7 +94,7 @@ public class ProfilesController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UpdateAsync(long id, [FromForm] ChangeUserInfoDto dto)
     {
-        var currentUserId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         
         // Check: only user can edit his own profile
         if (currentUserId != id.ToString())
@@ -138,7 +138,7 @@ public class ProfilesController : ControllerBase
     [Authorize]
     public async Task<IActionResult> ChangeUserPasswordAsync(long id, [FromBody] ChangeUserPasswordDto dto)
     {
-        var currentUserId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         
         if (currentUserId != id.ToString())
         {
@@ -182,7 +182,7 @@ public class ProfilesController : ControllerBase
     [Authorize]
     public async Task<IActionResult> DeleteAsync(long id)
     {
-        var currentUserId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         
         if (currentUserId != id.ToString())
         {
@@ -220,6 +220,45 @@ public class ProfilesController : ControllerBase
     {
         var list = await _trackService.GetUserLibraryAsync(userId);
         return Ok(list);
+    }
+    
+    //TODO: AddTrackToLibraryAsync (Вроде бы сделал)
+    [HttpPost("library/track/{trackId}")]
+    [Authorize]
+    public async Task<IActionResult> AddTrackToLibraryAsync(long trackId)
+    {
+        try
+        {
+            var userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            await _trackService.AddTrackToLibraryAsync(trackId, userId);
+            return Ok("Track added successfully");
+        }
+        catch (KeyNotFoundException e)
+        {
+            return NotFound(new { error = e.Message });
+        }
+        catch (ArgumentException e)
+        {
+            return BadRequest(new { error = e.Message });
+        }
+        
+    }
+    
+    //TODO: RemoveTrackToLibraryAsync (Вроде бы сделал)
+    [HttpDelete("library/track/{trackId}")]
+    [Authorize]
+    public async Task<IActionResult> RemoveTrackToLibraryAsync(long trackId)
+    {
+        try
+        {
+            var userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            await _trackService.RemoveTrackToLibraryAsync(trackId, userId);
+            return Ok("Track removed successfully");
+        }
+        catch (KeyNotFoundException e)
+        {
+            return NotFound(new { error = e.Message });
+        }
     }
     
     //TODO: GetUserSavedPlaylistsAsync (Вроде бы сделал)

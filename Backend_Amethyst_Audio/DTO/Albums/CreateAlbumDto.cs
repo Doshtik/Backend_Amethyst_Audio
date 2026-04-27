@@ -8,7 +8,7 @@ public class CreateAlbumDto
 
     public IFormFile CoverFile { get; set; }
     
-    public string AuthorIdListJson { get; set; }
+    public string AuthorsIdList { get; set; }
     
-    public string TrackIdListJson { get; set; }
+    public string TracksIdList { get; set; }
 }

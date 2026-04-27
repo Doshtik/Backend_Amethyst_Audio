@@ -10,7 +10,7 @@ public class ChangePlaylistInfoDto
 
     public IFormFile? CoverFile { get; set; }
     
-    public List<TrackInfoDto>? AddedTrackList { get; set; }
+    public string? AddedTracksIdList { get; set; }
     
-    public List<TrackInfoDto>? RemovedTrackList { get; set; }
+    public string? RemovedTracksIdList { get; set; }
 }

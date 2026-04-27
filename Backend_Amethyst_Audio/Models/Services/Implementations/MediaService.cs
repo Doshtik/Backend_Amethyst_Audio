@@ -71,34 +71,49 @@ public class MediaService: IMediaService
         }
     }
     
-    public async Task DeleteFileAsync(string filePath)
+    public async Task DeleteFileAsync(string fileName, FileTypes typeName)
     {
-        _logger.LogInformation("[Info] Deleting file. FilePath={FilePath}", filePath);
+        _logger.LogInformation("[Info] Deleting file. FilePath={FilePath}", fileName);
+        
+        if (string.IsNullOrWhiteSpace(fileName) || fileName == "default_cover.jpg")
+            return;
         
         try
         {
-            if (string.IsNullOrWhiteSpace(filePath) || !Path.IsPathRooted(filePath))
+            string folderName = typeName switch
             {
-                var fullPath = Path.Combine(RootPath, filePath);
-                
-                if (!File.Exists(fullPath))
-                {
-                    _logger.LogWarning("[Warn] File not found for deletion. FilePath={FilePath}", filePath);
-                    throw new FileNotFoundException("File not found");
-                }
-                
-                File.Delete(fullPath);
-                _logger.LogInformation("[Info] File deleted successfully. FilePath={FilePath}", filePath);
-            }
-            else
+                FileTypes.Tracks => "Tracks",
+                FileTypes.Covers => "Covers",
+                FileTypes.Avatars => "Avatars",
+                FileTypes.Headers => "Headers",
+                _ => throw new ArgumentException($"[Warn] Unknown file type: {typeName}")
+            };
+            
+            var fullPath = Path.Combine(RootPath, folderName, fileName);
+            
+            if (Path.IsPathRooted(fileName))
             {
-                _logger.LogWarning("[Warn] Absolute path deletion attempt blocked. FilePath={FilePath}", filePath);
+                _logger.LogWarning("[Warn] Absolute path deletion attempt blocked. FilePath={FilePath}", fileName);
                 throw new SecurityException("Absolute paths are not allowed for deletion");
             }
+            
+            if (!File.Exists(fullPath))
+            {
+                _logger.LogWarning("[Warn] File not found for deletion. FilePath={FilePath}", fullPath);
+                return;
+            }
+            
+            await Task.Run(() => File.Delete(fullPath));
+            _logger.LogInformation("[Info] File deleted successfully. FilePath={FilePath}", fileName);
         }
-        catch (Exception e)
+        catch (UnauthorizedAccessException ex)
         {
-            _logger.LogError(e, "[Error] Failed to delete file. FilePath={FilePath}", filePath);
+            _logger.LogError(ex, "[Error] Permission denied to delete file. FilePath={FilePath}", fileName);
+            throw;
+        }
+        catch (IOException ex)
+        {
+            _logger.LogError(ex, "[Error] IO error while deleting file. FilePath={FilePath}", fileName);
             throw;
         }
     }

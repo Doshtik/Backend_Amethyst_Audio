@@ -16,7 +16,6 @@ public class UserService : IUserService
     private readonly IMediaService _mediaService;
     private readonly IMapper _mapper;
     private readonly ILogger<UserService> _logger;
-    private IUserService _userServiceImplementation;
 
     public UserService(
         AppDbContext db, 
@@ -328,7 +327,7 @@ public class UserService : IUserService
         return _mapper.Map<List<UserInfoDto>>(users);
     }
 
-    public async Task<int> GetListenersAmountAsync(long userId)
+    public async Task<int> GetSubscriberAmountAsync(long userId)
     {
         _logger.LogDebug("[Debug] Get followers count. UserId={UserId}", userId);
         

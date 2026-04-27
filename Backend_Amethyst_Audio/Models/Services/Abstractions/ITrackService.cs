@@ -10,7 +10,7 @@ public interface ITrackService
     // Track CRUD
     Task<TrackInfoDto> GetByIdAsync(long id);
     Task<List<TrackInfoDto>> GetAllAsync();
-    Task<TrackInfoDto> CreateAsync(CreateTrackDto dto);
+    Task<TrackInfoDto> CreateAsync(CreateTrackDto dto, long userId);
     Task<TrackInfoDto> UpdateAsync(ChangeTrackInfoDto dto);
     Task DeleteAsync(long id);
     
@@ -19,6 +19,8 @@ public interface ITrackService
     Task<List<TrackInfoDto>> GetListByGenreAsync(string genre);
     Task<List<TrackInfoDto>> GetListByTrackNameAsync(string trackName);
     Task<List<TrackInfoDto>> GetUserLibraryAsync(long userId);
+    Task AddTrackToLibraryAsync(long trackId, long userId);
+    Task RemoveTrackToLibraryAsync(long trackId, long userId);
     Task<List<TrackInfoDto>> GetListTrackByUserIdAsync(long userId);
     Task<List<TrackInfoDto>> GetListOfNewestAsync(int limit = 50);
     

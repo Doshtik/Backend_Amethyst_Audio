@@ -10,8 +10,6 @@ public class UserInfoDto
     
     public string Nickname { get; set; } = null!;
     
-    public string Email { get; set; } = null!;
-    
     public string? AvatarUrl { get; set; } // Ссылка на аватарку пользователя
     
     public string? HeaderUrl { get; set; } // Ссылка на задний фон пользователя

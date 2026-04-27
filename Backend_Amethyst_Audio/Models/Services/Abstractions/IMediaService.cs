@@ -5,7 +5,7 @@ namespace Backend_Amethyst_Audio.Services.Abstractions;
 public interface IMediaService
 {
     Task<string> SaveFileAsync(IFormFile file, FileTypes typeName);
-    Task DeleteFileAsync(string filePath);
+    Task DeleteFileAsync(string fileName, FileTypes typeName);
     
     Task<string> GetTrackFilePathAsync(int id);
     Task<string> GetTrackCoverPathAsync(int id);

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AutoMapper;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.DTO.Pages;
@@ -38,6 +39,8 @@ public class TracksService : ITrackService
         var track = await _db.Tracks
             .AsNoTracking()
             .Include(p => p.PlaylistsTracks)
+            .Include(p => p.TracksAuthors)
+            .ThenInclude(ta => ta.IdAuthorNavigation)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (track is null)
@@ -56,15 +59,20 @@ public class TracksService : ITrackService
         
         var tracks = await _db.Tracks
             .AsNoTracking()
+            .Include(p => p.PlaylistsTracks)
+            .Include(p => p.TracksAuthors)
+            .ThenInclude(ta => ta.IdAuthorNavigation)
             .ToListAsync();
         
         _logger.LogInformation("[Info] Retrieved {Count} tracks", tracks.Count);
         return _mapper.Map<List<TrackInfoDto>>(tracks);
     }
 
-    public async Task<TrackInfoDto> CreateAsync(CreateTrackDto dto)
+    public async Task<TrackInfoDto> CreateAsync(CreateTrackDto dto, long userId)
     {
-        _logger.LogInformation("[Info] Creating new track. Title={Title}, AuthorsCount={AuthorsCount}", dto.Name, dto.Authors?.Count ?? 0);
+        List<long> authorIdList = JsonSerializer.Deserialize<List<long>>(dto.AuthorsIdList) ?? new List<long>();
+        authorIdList.Add(userId);
+        _logger.LogInformation("[Info] Creating new track. Title={Title}, AuthorsCount={AuthorsCount}", dto.Name, authorIdList?.Count ?? 0);
 
         string trackFileName, coverFileName;
         try
@@ -94,12 +102,12 @@ public class TracksService : ITrackService
         track.TrackFileName = trackFileName;
         track.CoverFileName = coverFileName;
         
-        foreach (var authorDto in dto.Authors)
+        foreach (long usersId in authorIdList)
         {
             track.TracksAuthors.Add(new TracksAuthor
             {
                 IdTrack = track.Id,
-                IdAuthor = authorDto.Id
+                IdAuthor = usersId
             });
         }
         
@@ -148,7 +156,7 @@ public class TracksService : ITrackService
                 var newFileName = await _mediaService.SaveFileAsync(dto.TrackFile, FileTypes.Tracks);
                 
                 if (!string.IsNullOrEmpty(track.TrackFileName))
-                    await _mediaService.DeleteFileAsync(track.TrackFileName);
+                    await _mediaService.DeleteFileAsync(track.TrackFileName, FileTypes.Tracks);
                 
                 track.TrackFileName = newFileName;
             }
@@ -168,7 +176,7 @@ public class TracksService : ITrackService
                 var newFileName = await _mediaService.SaveFileAsync(dto.CoverFile, FileTypes.Covers);
                 
                 if (!string.IsNullOrEmpty(track.CoverFileName))
-                    await _mediaService.DeleteFileAsync(track.CoverFileName);
+                    await _mediaService.DeleteFileAsync(track.CoverFileName, FileTypes.Covers);
                 
                 track.CoverFileName = newFileName;
             }
@@ -200,10 +208,10 @@ public class TracksService : ITrackService
         try
         {
             if (!string.IsNullOrEmpty(track.TrackFileName))
-                await _mediaService.DeleteFileAsync(track.TrackFileName);
+                await _mediaService.DeleteFileAsync(track.TrackFileName, FileTypes.Tracks);
             
             if (!string.IsNullOrEmpty(track.CoverFileName))
-                await _mediaService.DeleteFileAsync(track.CoverFileName);
+                await _mediaService.DeleteFileAsync(track.CoverFileName, FileTypes.Covers);
         }
         catch (Exception ex)
         {
@@ -318,6 +326,82 @@ public class TracksService : ITrackService
             .Select(x => x.IdTrackNavigation)
             .ToListAsync();
         return _mapper.Map<List<TrackInfoDto>>(tracks);
+    }
+
+    public async Task AddTrackToLibraryAsync(long trackId, long userId)
+    {
+        Library? library = await _db.Libraries.FirstOrDefaultAsync(x => x.IdUser == userId);
+
+        if (library is null)
+        {
+            _logger.LogWarning("[Error] Library for {UserId} doesn't exist", userId);
+            _logger.LogInformation("[Info] Creating a new library for {UserId}", userId);
+            
+            _db.Libraries.Add(new Library { IdUser = userId });
+            await _db.SaveChangesAsync();
+            
+            _logger.LogInformation("[Info] Library for {UserId} created", userId);
+            library = await _db.Libraries.FirstOrDefaultAsync(x => x.IdUser == userId);
+        }
+        
+        Track? track = await _db.Tracks.FindAsync(trackId);
+        
+        if (track is null)
+        {
+            _logger.LogWarning("[Error] Track {TrackId} doesn't exist", trackId);
+            throw new KeyNotFoundException("Track doesn't exist");
+        }
+        
+        LibrariesTrack? libraryTrack = _db.LibrariesTracks.FirstOrDefault(x => 
+            x.IdLibrary == library.Id &&
+            x.IdTrack == trackId);
+        
+        if (libraryTrack is not null)
+        {
+            _logger.LogWarning("[Error] Library track {TrackId} already exist", trackId);
+            throw new ArgumentException("Library track already exists");
+        }
+        
+        _db.LibrariesTracks.Add(new LibrariesTrack
+        {
+            IdLibrary = library.Id, 
+            IdTrack = track.Id, 
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("[Info] Track for {UserId} library was added", userId);
+    }
+
+    public async Task RemoveTrackToLibraryAsync(long trackId, long userId)
+    {
+        Library? library = await _db.Libraries.FirstOrDefaultAsync(x => x.IdUser == userId);
+
+        if (library is null)
+        {
+            _logger.LogWarning("[Error] Library for {UserId} doesn't exist", userId);
+            _logger.LogInformation("[Info] Creating a new library for {UserId}", userId);
+            
+            _db.Libraries.Add(new Library { IdUser = userId });
+            await _db.SaveChangesAsync();
+            
+            _logger.LogInformation("[Info] Library for {UserId} created", userId);
+            library = await _db.Libraries.FirstOrDefaultAsync(x => x.IdUser == userId);
+            return;
+        }
+        
+        
+        LibrariesTrack? lt = await _db.LibrariesTracks.FirstOrDefaultAsync(x => 
+            x.IdLibrary == library.Id && 
+            x.IdTrack == trackId);
+
+        if (lt is null)
+        {
+            _logger.LogWarning("[Error] Track {TrackId} in Library {LibraryId} doesn't exist", trackId, library.Id);
+            throw new KeyNotFoundException("Track in Library doesn't exist");
+        }
+        _db.LibrariesTracks.Remove(lt);
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("[Info] Library for {UserId} library was removed", userId);
     }
 
     public async Task<List<TrackInfoDto>> GetPersonalizedRecommendationsAsync(

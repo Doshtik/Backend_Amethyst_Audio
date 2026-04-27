@@ -1,3 +1,4 @@
+using System.Data;
 using System.Security.Claims;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.Services.Abstractions;
@@ -123,14 +124,20 @@ public class PlaylistsController : ControllerBase
         }
         catch (ArgumentException e)
         {
-            _logger.LogWarning("[Warn] Validation failed for playlist creation. UserId={UserId}, Reason={Reason}", 
+            _logger.LogWarning("[Warn] Validation failed for playlist creation. , Reason={Reason}", 
+                userId, e.Message);
+            return BadRequest(new { error = e.Message });
+        }
+        catch (NoNullAllowedException e)
+        {
+            _logger.LogWarning("[Warn] Playlist must have at least one track. UserId={UserId}, Reason={Reason}",
                 userId, e.Message);
             return BadRequest(new { error = e.Message });
         }
         catch (Exception e)
         {
             _logger.LogError(e, "[Error] Failed to create playlist. UserId={UserId}", userId);
-            return StatusCode(500, new { error = "Internal server error" });
+            return StatusCode(500, new { error = "Internal server error", detail = e.Message });
         }
     }
 
@@ -138,21 +145,21 @@ public class PlaylistsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UpdateAsync(long id, [FromForm] ChangePlaylistInfoDto dto) 
     {
-        long? userId = long.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
+        long? userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         
         if (userId is null)
         {
             _logger.LogWarning("[Warn] Playlist creation attempt without valid user claim");
             return Unauthorized(new { error = "Authentication required" });
         }
-        
+
         try
         {
-            _logger.LogInformation("[Info] Update playlist request. PlaylistId={PlaylistId}, UserId={UserId}", 
+            _logger.LogInformation("[Info] Update playlist request. PlaylistId={PlaylistId}, UserId={UserId}",
                 id, userId);
-            
+
             PlaylistInfoDto playlist = await _playlistService.UpdateAsync(id, dto, userId.ToString());
-            
+
             _logger.LogInformation("[Info] Playlist updated successfully. PlaylistId={PlaylistId}", id);
             return Ok(playlist);
         }
@@ -163,19 +170,20 @@ public class PlaylistsController : ControllerBase
         }
         catch (UnauthorizedAccessException e)
         {
-            _logger.LogWarning("[Warn] Unauthorized update attempt. PlaylistId={PlaylistId}, UserId={UserId}", id, userId);
+            _logger.LogWarning("[Warn] Unauthorized update attempt. PlaylistId={PlaylistId}, UserId={UserId}", id,
+                userId);
             return Forbid();
         }
         catch (ArgumentException e)
         {
-            _logger.LogWarning("[Warn] Validation failed for playlist update. PlaylistId={PlaylistId}, Reason={Reason}", 
+            _logger.LogWarning("[Warn] Validation failed for playlist update. PlaylistId={PlaylistId}, Reason={Reason}",
                 id, e.Message);
             return BadRequest(new { error = e.Message });
         }
         catch (Exception e)
         {
             _logger.LogError(e, "[Error] Failed to update playlist. PlaylistId={PlaylistId}", id);
-            return StatusCode(500, new { error = "Internal server error" });
+            return StatusCode(500, new { error = "Internal server error", detail = e.Message });
         }
     }
 
@@ -183,7 +191,7 @@ public class PlaylistsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> DeleteAsync(long id)
     {
-        var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         
         try
         {
@@ -211,12 +219,14 @@ public class PlaylistsController : ControllerBase
             return StatusCode(500, new { error = "Internal server error" });
         }
     }
+    
+    //TODO: сделать методы для UserHistory
 
     [HttpPost("{id}/save")]
     [Authorize]
     public async Task<IActionResult> SavePlaylistAsync(long id)
     {
-        var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         
         if (string.IsNullOrEmpty(userId))
             return Unauthorized(new { error = "Authentication required" });

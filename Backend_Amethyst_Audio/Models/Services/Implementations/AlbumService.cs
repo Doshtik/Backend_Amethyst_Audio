@@ -85,8 +85,8 @@ public class AlbumService : IAlbumService
             _logger.LogDebug("[Debug] No cover file provided, using default: {FileName}", coverFileName);
         }
         
-        var authorIds = JsonSerializer.Deserialize<List<long>>(dto.AuthorIdListJson);
-        var trackIds = JsonSerializer.Deserialize<List<long>>(dto.TrackIdListJson);
+        var authorIds = JsonSerializer.Deserialize<List<long>>(dto.AuthorsIdList);
+        var trackIds = JsonSerializer.Deserialize<List<long>>(dto.TracksIdList);
 
         var existingAuthors = await _db.Users
             .Where(u => authorIds.Contains(u.Id))
@@ -136,19 +136,15 @@ public class AlbumService : IAlbumService
         await _db.SaveChangesAsync();
         
         _logger.LogInformation("[Info] Successfully created album with ID {AlbumId}", albumEntity.Id);
-        AlbumInfoDto resultDto = _mapper.Map<AlbumInfoDto>(albumEntity);
-        resultDto.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks.AsNoTracking()
-            .Where(x => x.IdAlbum == albumEntity.Id).Select(x => x.IdTrackNavigation).ToListAsync());
-        resultDto.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors.AsNoTracking()
-            .Where(x => x.IdAlbum == albumEntity.Id).Select(x => x.IdAuthorNavigation).ToListAsync());
-        return resultDto;
+        return await GetAlbumInfoDtoAsync(albumEntity.Id);
     }
 
-    public async Task<AlbumInfoDto> UpdateAsync(ChangeAlbumInfoDto dto)
+    //TODO: Переделать UpdateAsync
+    public async Task<AlbumInfoDto> UpdateAsync(long albumId, ChangeAlbumInfoDto dto)
     {
         var albumEntity = await _db.Albums
-            .FirstOrDefaultAsync(a => a.Id == dto.Id)
-            ?? throw new KeyNotFoundException($"Альбом с ID {dto.Id} не найден");
+            .FirstOrDefaultAsync(a => a.Id == albumId)
+            ?? throw new KeyNotFoundException($"Альбом с ID {albumId} не найден");
 
         if (!string.IsNullOrWhiteSpace(dto.Name))
             albumEntity.Name = dto.Name;
@@ -160,13 +156,12 @@ public class AlbumService : IAlbumService
             if (!string.IsNullOrEmpty(albumEntity.CoverFileName) && 
                 albumEntity.CoverFileName != "default_cover.jpg")
             {
-                await _mediaService.DeleteFileAsync(albumEntity.CoverFileName);
+                await _mediaService.DeleteFileAsync(albumEntity.CoverFileName, FileTypes.Covers);
             }
             
             albumEntity.CoverFileName = await _mediaService.SaveFileAsync(dto.CoverFile, FileTypes.Covers);
         }
-
-        _db.Albums.Update(albumEntity);
+        
         await _db.SaveChangesAsync();
 
         if (!string.IsNullOrWhiteSpace(dto.AddedTrackList))
@@ -225,8 +220,8 @@ public class AlbumService : IAlbumService
     private async Task<AlbumInfoDto> GetAlbumInfoDtoAsync(long albumId)
     {
         var album = await _db.Albums.AsNoTracking()
-                        .FirstOrDefaultAsync(a => a.Id == albumId)
-                    ?? throw new KeyNotFoundException($"Альбом {albumId} не найден");
+            .FirstOrDefaultAsync(a => a.Id == albumId)
+            ?? throw new KeyNotFoundException($"Album {albumId} has not been found");
     
         var resultDto = _mapper.Map<AlbumInfoDto>(album);
     
@@ -267,13 +262,13 @@ public class AlbumService : IAlbumService
         {
             if (!string.IsNullOrEmpty(albumEntity.CoverFileName))
             {
-                await _mediaService.DeleteFileAsync(albumEntity.CoverFileName);
+                await _mediaService.DeleteFileAsync(albumEntity.CoverFileName, FileTypes.Covers);
             }
         }
         catch (Exception e)
         {
             _logger.LogError(e, "[Error] Failed to delete album cover. {AlbumId}", id);
-            throw;
+            throw new Exception($"Failed to delete album cover.");
         }
         
 
@@ -320,7 +315,15 @@ public class AlbumService : IAlbumService
             .ToListAsync();
             
         _logger.LogInformation("[Info] Retrieved {Count} albums for author {UserId}", albums.Count, userId);
-        return _mapper.Map<List<AlbumInfoDto>>(albums);
+        List<AlbumInfoDto> resultDto = _mapper.Map<List<AlbumInfoDto>>(albums);
+        foreach (var album in resultDto)
+        {
+            album.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks.AsNoTracking()
+                .Where(x => x.IdAlbum == album.Id).Select(x => x.IdTrackNavigation).ToListAsync());
+            album.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors.AsNoTracking()
+                .Where(x => x.IdAlbum == album.Id).Select(x => x.IdAuthorNavigation).ToListAsync());
+        }
+        return resultDto;
     }
 
     public async Task<List<AlbumInfoDto>> GetListSavedAsync(long userId)

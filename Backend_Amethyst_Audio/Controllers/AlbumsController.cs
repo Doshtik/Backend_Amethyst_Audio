@@ -111,7 +111,7 @@ public class AlbumsController : ControllerBase
         _logger.LogDebug("[Debug] Request to update album. DTO: {@Dto}", dto);
         try
         {
-            var album = await _albumService.UpdateAsync(dto);
+            var album = await _albumService.UpdateAsync(id, dto);
             _logger.LogInformation("[Info] Successfully updated album {AlbumId}", album.Id);
             return Ok(album);
         }
@@ -141,7 +141,7 @@ public class AlbumsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "[Error] Unexpected error occurred while deleting album {AlbumId}", id);
-            return Problem(statusCode: 500, title: "Internal Server Error", detail: "An error occurred while processing your request.");
+            return Problem(statusCode: 500, title: "Internal Server Error", detail: ex.Message);
         }
     }
 
@@ -155,7 +155,7 @@ public class AlbumsController : ControllerBase
         {
             await _albumService.SaveAlbumAsync(userId, id);
             _logger.LogInformation("[Info] Successfully saved album {AlbumId} for user {UserId}", id, userId);
-            return Ok();
+            return Ok("Album successfully saved");
         }
         catch (InvalidOperationException ex)
         {

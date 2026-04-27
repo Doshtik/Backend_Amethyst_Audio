@@ -16,4 +16,7 @@ public class CreatePlaylistDto
     public string? Description { get; set; }
 
     public IFormFile? CoverFile { get; set; }
+    
+    [Required]
+    public string TracksIdList { get; set; }
 }
