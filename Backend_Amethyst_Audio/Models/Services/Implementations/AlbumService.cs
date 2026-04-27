@@ -139,7 +139,6 @@ public class AlbumService : IAlbumService
         return await GetAlbumInfoDtoAsync(albumEntity.Id);
     }
 
-    //TODO: Переделать UpdateAsync
     public async Task<AlbumInfoDto> UpdateAsync(long albumId, ChangeAlbumInfoDto dto)
     {
         var albumEntity = await _db.Albums

@@ -13,6 +13,12 @@ public interface ITrackService
     Task<TrackInfoDto> CreateAsync(CreateTrackDto dto, long userId);
     Task<TrackInfoDto> UpdateAsync(ChangeTrackInfoDto dto);
     Task DeleteAsync(long id);
+
+    /*
+    Task GetUserHistory();
+    Task CreateUserHistory();
+    Task UpdateUserHistory();
+     */
     
     // Search & Filters
     Task<GenreInfoDto> GetListGenresAsync();

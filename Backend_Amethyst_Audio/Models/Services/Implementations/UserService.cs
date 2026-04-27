@@ -316,6 +316,60 @@ public class UserService : IUserService
         _logger.LogInformation("[Info] User deleted. UserId={UserId}", id);
     }
 
+    public async Task<List<UserHistoryDto>> GetUserHistoryAsync(long userId)
+    {
+        List<UsersHistory> history = await _db.UsersHistories
+            .AsNoTracking()
+            .Include(x => x.IdUserNavigation)
+            .Include(x => x.IdTrackNavigation)
+            .Where(x => x.IdUser == userId)
+            .OrderByDescending(x => x.ListeningAt)
+            .ToListAsync();
+        return _mapper.Map<List<UserHistoryDto>>(history);
+    }
+
+    public async Task AddToHistoryAsync(long userId, long trackId)
+    {
+        Track? track = await _db.Tracks.FirstOrDefaultAsync(x => x.Id == trackId);
+
+        if (track is null)
+        {
+            throw new KeyNotFoundException("Track not found");
+        }
+        
+        UsersHistory? history = await _db.UsersHistories.FirstOrDefaultAsync(x => 
+            x.IdUser == userId && 
+            x.IdTrack == trackId);
+
+        if (history is not null)
+        {
+            throw new KeyNotFoundException("User history already exists");
+        }
+
+        history = new UsersHistory()
+        {
+            IdUser = userId,
+            IdTrack = trackId,
+        };
+        await _db.UsersHistories.AddAsync(history);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task UpdateListeningTimeAsync(long userId, long trackId, int seconds)
+    {
+        UsersHistory? history = await _db.UsersHistories.FirstOrDefaultAsync(x => 
+            x.IdUser == userId && 
+            x.IdTrack == trackId);
+
+        if (history is null)
+        {
+            throw new KeyNotFoundException("User history not found");
+        }
+
+        history.TotalListeningSec += seconds;
+        await _db.SaveChangesAsync();
+    }
+
     public async Task<List<UserInfoDto>> GetListByNicknameAsync(string nickname)
     {
         _logger.LogDebug("[Debug] Get user list by nickname. Nickname={Nickname}", nickname);

@@ -28,5 +28,9 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.HeaderFileName, opt => opt.Ignore())
             .ForAllMembers(opts => 
                 opts.Condition((src, dest, srcMember) => srcMember != null));
+
+        CreateMap<UsersHistory, UserHistoryDto>()
+            .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.IdUserNavigation))
+            .ForMember(dest => dest.Track, opt => opt.MapFrom(src => src.IdTrackNavigation));
     }
 }

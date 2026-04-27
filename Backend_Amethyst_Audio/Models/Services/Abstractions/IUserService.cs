@@ -15,6 +15,10 @@ public interface IUserService
     Task ChangePasswordAsync(long id, ChangeUserPasswordDto dto);
     Task DeleteAsync(long id);
     
+    Task<List<UserHistoryDto>> GetUserHistoryAsync(long userId);
+    Task AddToHistoryAsync(long userId, long trackId);
+    Task UpdateListeningTimeAsync(long userId, long trackId, int seconds);
+    
     Task<List<UserInfoDto>> GetListByNicknameAsync(string nickname);
     
     Task<int> GetSubscriberAmountAsync(long id);

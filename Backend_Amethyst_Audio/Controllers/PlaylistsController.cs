@@ -219,8 +219,6 @@ public class PlaylistsController : ControllerBase
             return StatusCode(500, new { error = "Internal server error" });
         }
     }
-    
-    //TODO: сделать методы для UserHistory
 
     [HttpPost("{id}/save")]
     [Authorize]

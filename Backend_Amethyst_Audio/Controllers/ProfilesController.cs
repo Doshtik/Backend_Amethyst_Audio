@@ -213,6 +213,48 @@ public class ProfilesController : ControllerBase
         }
     }
     
+    [HttpGet("history")]
+    [Authorize]
+    public async Task<IActionResult> GetUserHistoryAsync()
+    {
+        long userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        List<UserHistoryDto> dto = await _userService.GetUserHistoryAsync(userId);
+        return Ok(dto);
+    }
+
+    [HttpPost("history/{trackId}")]
+    [Authorize]
+    public async Task<IActionResult> AddToHistoryAsync(long trackId)
+    {
+        long userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        try
+        {
+            await _userService.AddToHistoryAsync(userId, trackId);
+            return Created();
+        }
+        catch (KeyNotFoundException e)
+        {
+            return NotFound(new { error = e.Message });
+        }
+    }
+
+    [HttpPut("history/{trackId}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateListeningTimeAsync(long trackId, [FromQuery] int seconds)
+    {
+        long userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        try
+        {
+            await _userService.UpdateListeningTimeAsync(userId, trackId, seconds);
+            return Ok();
+        }
+        catch (KeyNotFoundException e)
+        {
+            return NotFound(new { error = e.Message });
+        }
+        
+    }
+
     //TODO: GetUserLibraryAsync (Вроде бы сделал)
     [HttpGet("library/{userId}")]
     [Authorize]
