@@ -77,6 +77,8 @@ public class UserService : IUserService
         User user = _mapper.Map<User>(dto);
         var hasher = new PasswordHasher<User>();
         user.PasswordHash = hasher.HashPassword(user, dto.Password);
+        user.AvatarFileName = "default-avatar.jpg";
+        user.HeaderFileName = "default-header.jpg";
 
         _db.Users.Add(user);
         await _db.SaveChangesAsync();

@@ -102,7 +102,7 @@ public class PlaylistService : IPlaylistService
         }
         else
         {
-            coverFileName = "default_cover.jpg";
+            coverFileName = "default-cover.jpg";
             _logger.LogDebug("[Debug] No cover file provided, using default: {FileName}", coverFileName);
         }
 

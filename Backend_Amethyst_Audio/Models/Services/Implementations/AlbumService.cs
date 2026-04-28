@@ -1,3 +1,4 @@
+using System.Data;
 using System.Text.Json;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
@@ -66,7 +67,7 @@ public class AlbumService : IAlbumService
         _logger.LogDebug("[Debug] Creating new album from DTO: {Dto}", dto);
         
         string coverFileName;
-        if (dto.CoverFile != null)
+        if (dto.CoverFile is not null)
         {
             try
             {
@@ -81,8 +82,8 @@ public class AlbumService : IAlbumService
         }
         else
         {
-            coverFileName = "default_cover.jpg";
-            _logger.LogDebug("[Debug] No cover file provided, using default: {FileName}", coverFileName);
+            _logger.LogError("[Debug] No cover file provided");
+            throw new NoNullAllowedException("Cover is required.");
         }
         
         var authorIds = JsonSerializer.Deserialize<List<long>>(dto.AuthorsIdList);
@@ -153,7 +154,7 @@ public class AlbumService : IAlbumService
         if (dto.CoverFile != null)
         {
             if (!string.IsNullOrEmpty(albumEntity.CoverFileName) && 
-                albumEntity.CoverFileName != "default_cover.jpg")
+                albumEntity.CoverFileName != "default-cover.jpg")
             {
                 await _mediaService.DeleteFileAsync(albumEntity.CoverFileName, FileTypes.Covers);
             }
