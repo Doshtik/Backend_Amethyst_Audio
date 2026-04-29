@@ -14,7 +14,7 @@ public class ChangeTrackInfoDto
 
     public short MoodId { get; set; }
     
-    public string GenresIdList { get; set; }
+    public string? GenresIdList { get; set; }
 
     public bool? IsTextless { get; set; }
 
