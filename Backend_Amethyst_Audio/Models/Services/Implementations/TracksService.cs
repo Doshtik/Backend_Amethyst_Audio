@@ -38,9 +38,8 @@ public class TracksService : ITrackService
         
         var track = await _db.Tracks
             .AsNoTracking()
-            .Include(p => p.PlaylistsTracks)
-            .Include(p => p.TracksAuthors)
-            .ThenInclude(ta => ta.IdAuthorNavigation)
+            .Include(x => x.TracksAuthors)
+            .ThenInclude(x => x.IdAuthorNavigation)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (track is null)
@@ -59,7 +58,6 @@ public class TracksService : ITrackService
         
         var tracks = await _db.Tracks
             .AsNoTracking()
-            .Include(p => p.PlaylistsTracks)
             .Include(p => p.TracksAuthors)
             .ThenInclude(ta => ta.IdAuthorNavigation)
             .ToListAsync();
@@ -91,8 +89,9 @@ public class TracksService : ITrackService
 
         var track = _mapper.Map<Track>(dto);
 
-        Mood? mood = await _db.Moods.AsNoTracking().FirstOrDefaultAsync(x => x.MoodName == dto.MoodName);
-        Pace? pace = await _db.Paces.AsNoTracking().FirstOrDefaultAsync(x => x.PaceName == dto.PaceName);
+        Mood? mood = await _db.Moods.AsNoTracking().FirstOrDefaultAsync(x => x.Id == dto.MoodId);
+        Pace? pace = await _db.Paces.AsNoTracking().FirstOrDefaultAsync(x => x.Id == dto.PaceId);
+        List<short> genresIdList = JsonSerializer.Deserialize<List<short>>(dto.GenresIdList) ?? new List<short>();
         
         track.IdMood = mood?.Id;
         track.IdPace = pace?.Id;
@@ -113,6 +112,25 @@ public class TracksService : ITrackService
         
         await _db.Tracks.AddAsync(track);
         await _db.SaveChangesAsync();
+        
+        foreach (short id in genresIdList)
+        {
+            Genre? genre = await _db.Genres
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (genre is null)
+            {
+                continue;
+            }
+            
+            _db.TracksGenres.Add(new TracksGenre
+            {
+                IdTrack = track.Id,
+                IdGenre = genre.Id,
+            });
+        }
+        await _db.SaveChangesAsync();
 
         _logger.LogInformation("[Info] Track created successfully. TrackId={TrackId}, Title={Title}", track.Id, track.Name);
         
@@ -131,7 +149,7 @@ public class TracksService : ITrackService
 
         var track = await _db.Tracks
             .Include(t => t.TracksAuthors)
-                .ThenInclude(ta => ta.IdAuthorNavigation)
+            .ThenInclude(ta => ta.IdAuthorNavigation)
             .FirstOrDefaultAsync(t => t.Id == dto.Id);
         if (track == null)
         {
@@ -141,11 +159,41 @@ public class TracksService : ITrackService
 
         _mapper.Map(dto, track);
 
-        Mood? mood = await _db.Moods.AsNoTracking().FirstOrDefaultAsync(x => x.MoodName == dto.MoodName);
-        Pace? pace = await _db.Paces.AsNoTracking().FirstOrDefaultAsync(x => x.PaceName == dto.PaceName);
+        Mood? mood = await _db.Moods.AsNoTracking().FirstOrDefaultAsync(x => x.Id == dto.MoodId);
+        Pace? pace = await _db.Paces.AsNoTracking().FirstOrDefaultAsync(x => x.Id == dto.PaceId);
+        List<short> genresIdList = JsonSerializer.Deserialize<List<short>>(dto.GenresIdList) ?? new List<short>();
         
         track.IdMood = mood?.Id;
         track.IdPace = pace?.Id;
+        
+        var existingRelations = await _db.TracksGenres
+            .Where(x => x.IdTrack == track.Id)
+            .ToListAsync();
+
+        _db.TracksGenres.RemoveRange(existingRelations);
+        
+        foreach (short id in genresIdList)
+        {
+            Genre? genre = await _db.Genres
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (genre is null)
+            {
+                continue;
+            }
+            
+            TracksGenre? tg = await _db.TracksGenres
+                .FirstOrDefaultAsync(x => 
+                    x.IdTrack == track.Id && 
+                    x.IdGenre == genre.Id);
+            
+            _db.TracksGenres.Add(new TracksGenre
+            {
+                IdTrack = track.Id,
+                IdGenre = genre.Id,
+            });
+        }
         track.UpdatedAt = DateTime.UtcNow;
 
         if (dto.TrackFile is not null)
@@ -287,6 +335,7 @@ public class TracksService : ITrackService
         
         var tracks = await _db.TracksAuthors
             .AsNoTracking()
+            .Include(x => x.IdAuthorNavigation)
             .Where(x => x.IdAuthor == userId)
             .Select(x => x.IdTrackNavigation)
             .ToListAsync();
@@ -306,6 +355,8 @@ public class TracksService : ITrackService
         
         var tracks = await _db.Tracks
             .AsNoTracking()
+            .Include(x => x.TracksAuthors)
+            .ThenInclude(x => x.IdAuthorNavigation)
             .Where(x => x.CreatedAt >= thresholdDate)
             .OrderByDescending(x => x.CreatedAt)
             .Take(limit)
@@ -321,6 +372,10 @@ public class TracksService : ITrackService
     public async Task<List<TrackInfoDto>> GetUserLibraryAsync(long userId)
     {
         var tracks = await _db.Libraries
+            .Include(x => x.LibrariesTracks)
+            .ThenInclude(x => x.IdTrackNavigation)
+            .ThenInclude(x => x.TracksAuthors)
+            .ThenInclude(x => x.IdAuthorNavigation)
             .Where(x => x.IdUser == userId)
             .SelectMany(x => x.LibrariesTracks)
             .Select(x => x.IdTrackNavigation)
@@ -409,44 +464,36 @@ public class TracksService : ITrackService
         string? userId = null)
     {
         _logger.LogDebug("[Debug] Building personalized recommendations. Mood={Mood}, Pace={Pace}, UserId={UserId}", 
-            recommendationsDto.MoodName ?? "*", recommendationsDto.PaceName ?? "*", userId ?? "anonymous");
+            recommendationsDto.MoodId, recommendationsDto.PaceId, userId ?? "anonymous");
         
         // Config validation
-        if (!string.IsNullOrWhiteSpace(recommendationsDto.MoodName) && !await _db.Moods.AnyAsync(m => m.MoodName == recommendationsDto.MoodName))
+        if (await _db.Moods.FirstOrDefaultAsync(x => x.Id == recommendationsDto.MoodId) is not null)
         {
-            _logger.LogWarning("[Warn] Invalid mood filter. Mood={Mood}", recommendationsDto.MoodName);
-            throw new ArgumentException($"Invalid mood: {recommendationsDto.MoodName}");
+            _logger.LogWarning("[Warn] Invalid mood filter. Mood={Mood}", recommendationsDto.MoodId);
+            throw new ArgumentException($"Invalid mood: {recommendationsDto.MoodId}");
         }
         
-        if (!string.IsNullOrWhiteSpace(recommendationsDto.PaceName) && !await _db.Paces.AnyAsync(p => p.PaceName == recommendationsDto.PaceName))
+        if (await _db.Paces.FirstOrDefaultAsync(x => x.Id == recommendationsDto.PaceId) is not null)
         {
-            _logger.LogWarning("[Warn] Invalid pace filter. Pace={Pace}", recommendationsDto.PaceName);
-            throw new ArgumentException($"Invalid pace: {recommendationsDto.PaceName}");
+            _logger.LogWarning("[Warn] Invalid pace filter. Pace={Pace}", recommendationsDto.PaceId);
+            throw new ArgumentException($"Invalid pace: {recommendationsDto.PaceId}");
         }
 
         // Dynamic query
-        var query = _db.PlaylistsTracks
+        var query = _db.Tracks
+            .Include(x => x.IdMoodNavigation)
+            .Include(x => x.IdPaceNavigation)
             .AsNoTracking()
             .AsQueryable();
         
-        if (!string.IsNullOrWhiteSpace(recommendationsDto.MoodName))
-            query = query.Where(pt => pt.IdTrackNavigation.IdMoodNavigation!.MoodName == recommendationsDto.MoodName);
-        
-        if (!string.IsNullOrWhiteSpace(recommendationsDto.PaceName))
-            query = query.Where(pt => pt.IdTrackNavigation.IdPaceNavigation!.PaceName == recommendationsDto.PaceName);
+        query = query
+            .Where(pt => pt.IdMood == recommendationsDto.MoodId && 
+                         pt.IdPace == recommendationsDto.PaceId);
         
         if (!string.IsNullOrWhiteSpace(recommendationsDto.Country))
-            query = query.Where(pt => pt.IdTrackNavigation.Country == recommendationsDto.Country);
+            query = query.Where(pt => pt.Country == recommendationsDto.Country);
 
-        var tracks = await query
-            .Select(pt => new TrackInfoDto
-            {
-                Id = pt.IdTrackNavigation.Id,
-                Name = pt.IdTrackNavigation.Name,
-                CoverUrl = pt.IdTrackNavigation.CoverFileName,
-                DurationSec = pt.IdTrackNavigation.DurationSec,
-                UserList = _mapper.Map<List<UserInfoDto>>(pt.IdTrackNavigation.TracksAuthors.ToList())
-            })
+        List<Track> tracks = await query
             .Distinct()
             .Take(50)
             .ToListAsync();
@@ -454,34 +501,21 @@ public class TracksService : ITrackService
         _logger.LogInformation("[Info] Personalized recommendations generated. Count={Count}, UserId={UserId}", 
             tracks.Count, userId ?? "anonymous");
         
-        return tracks;
+        return _mapper.Map<List<TrackInfoDto>>(tracks);
     }
 
-    public async Task<PageMyRecordDto> GetRecommendationConfigAsync()
+    public async Task<ResonanceConfigDto> GetRecommendationConfigAsync()
     {
         _logger.LogDebug("[Debug] Fetching recommendation configuration");
         
-        var dto = new PageMyRecordDto
+        var dto = new ResonanceConfigDto
         {
-            AvailablePaces = await _db.Paces.AsNoTracking().Select(x => x.PaceName).ToListAsync(),
-            AvailableMoods = await _db.Moods.AsNoTracking().Select(x => x.MoodName).ToListAsync()
+            AvailablePaces = await _db.Paces.AsNoTracking().ToListAsync(),
+            AvailableMoods = await _db.Moods.AsNoTracking().ToListAsync()
         };
         
         _logger.LogInformation("[Info] Recommendation config loaded. Moods={MoodCount}, Paces={PaceCount}", 
             dto.AvailableMoods.Count, dto.AvailablePaces.Count);
         return dto;
-    }
-
-    public async Task<bool> IsLikedAsync(long userId, long trackId)
-    {
-        _logger.LogDebug("[Debug] Check if track is liked. UserId={UserId}, TrackId={TrackId}", userId, trackId);
-        
-        var exists = await _db.LibrariesTracks
-            .AsNoTracking()
-            .AnyAsync(x => x.IdTrack == trackId && x.IdLibraryNavigation.IdUser == userId);
-        
-        _logger.LogDebug("[Debug] Like status: {IsLiked}. UserId={UserId}, TrackId={TrackId}", 
-            exists, userId, trackId);
-        return exists;
     }
 }

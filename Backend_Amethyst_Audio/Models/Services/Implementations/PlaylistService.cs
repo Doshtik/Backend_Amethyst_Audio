@@ -34,6 +34,8 @@ public class PlaylistService : IPlaylistService
             .AsNoTracking()
             .Include(x => x.PlaylistsTracks)
             .ThenInclude(x => x.IdTrackNavigation)
+            .ThenInclude(x => x.TracksAuthors)
+            .ThenInclude(x => x.IdAuthorNavigation)
             .FirstOrDefaultAsync(p => p.Id == id);
 
         if (playlist == null)
@@ -56,6 +58,8 @@ public class PlaylistService : IPlaylistService
             .AsNoTracking()
             .Include(x => x.PlaylistsTracks)
             .ThenInclude(x => x.IdTrackNavigation)
+            .ThenInclude(x => x.TracksAuthors)
+            .ThenInclude(x => x.IdAuthorNavigation)
             .ToListAsync();
         
         var result = _mapper.Map<List<PlaylistInfoDto>>(playlists);
@@ -267,6 +271,8 @@ public class PlaylistService : IPlaylistService
             .AsNoTracking()
             .Include(x => x.PlaylistsTracks)
             .ThenInclude(x => x.IdTrackNavigation)
+            .ThenInclude(x => x.TracksAuthors)
+            .ThenInclude(x => x.IdAuthorNavigation)
             .Where(x => x.IdUser == userId)
             .OrderByDescending(x => x.UpdatedAt)
             .ToListAsync();
@@ -308,6 +314,11 @@ public class PlaylistService : IPlaylistService
         
         List<Playlist> playlists = await _db.SavedPlaylists
             .AsNoTracking()
+            .Include(x => x.IdPlaylistNavigation)
+            .ThenInclude(x => x.PlaylistsTracks)
+            .ThenInclude(x => x.IdTrackNavigation)
+            .ThenInclude(x => x.TracksAuthors)
+            .ThenInclude(x => x.IdAuthorNavigation)
             .Where(x => x.IdUser == userId)
             .Select(x => x.IdPlaylistNavigation)
             .ToListAsync();

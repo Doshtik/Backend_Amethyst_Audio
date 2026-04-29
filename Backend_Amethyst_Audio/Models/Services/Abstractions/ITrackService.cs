@@ -31,7 +31,7 @@ public interface ITrackService
     Task<List<TrackInfoDto>> GetListOfNewestAsync(int limit = 50);
     
     // Recommendations
-    Task<PageMyRecordDto> GetRecommendationConfigAsync();
+    Task<ResonanceConfigDto> GetRecommendationConfigAsync();
     Task<List<TrackInfoDto>> GetPersonalizedRecommendationsAsync(
         PageResonanceDto recommendationsDto, 
         string userId = null);

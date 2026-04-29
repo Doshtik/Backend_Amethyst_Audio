@@ -32,7 +32,7 @@ public class RecommendationController : ControllerBase
             _logger.LogDebug("[Debug] Requesting recommendation config. UserId={UserId}", 
                 User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) ?? "anonymous");
             
-            PageMyRecordDto config = await _trackService.GetRecommendationConfigAsync();
+            ResonanceConfigDto config = await _trackService.GetRecommendationConfigAsync();
             
             _logger.LogInformation("[Info] Recommendation config retrieved. Moods={MoodCount}, Paces={PaceCount}", 
                 config.AvailableMoods?.Count ?? 0, config.AvailablePaces?.Count ?? 0);
@@ -58,7 +58,7 @@ public class RecommendationController : ControllerBase
         try
         {
             _logger.LogInformation("[Info] Personalized recommendations request. UserId={UserId}, Mood={Mood}, Pace={Pace}, Country={Country}", 
-                userId, recommendationsDto.MoodName ?? "any", recommendationsDto.PaceName ?? "any", recommendationsDto.Country ?? "any");
+                userId, recommendationsDto.MoodId, recommendationsDto.PaceId, recommendationsDto.Country ?? "any");
             
             List<TrackInfoDto> tracks = await _trackService.GetPersonalizedRecommendationsAsync(recommendationsDto, userId);
             

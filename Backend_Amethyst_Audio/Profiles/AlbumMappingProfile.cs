@@ -24,9 +24,13 @@ public class AlbumMappingProfile : Profile
                     ? null 
                     : $"{_baseUrl}/albums/covers/{src.Id}"))
             .ForMember(dest => dest.AuthorList, opt => opt.MapFrom(src => 
-                src.AlbumsAuthors.Select(a => a.IdAuthorNavigation).ToList() ?? new()))
+                src.AlbumsAuthors
+                    .Select(a => a.IdAuthorNavigation)
+                    .ToList() ?? new()))
             .ForMember(dest => dest.TrackList, opt => opt.MapFrom(src => 
-                src.AlbumsTracks.Select(t => t.IdTrackNavigation).ToList() ?? new()));
+                src.AlbumsTracks
+                    .Select(t => t.IdTrackNavigation)
+                    .ToList() ?? new()));
 
         // 3. Изменение информации об альбоме (частичное обновление)
         CreateMap<ChangeAlbumInfoDto, Album>()

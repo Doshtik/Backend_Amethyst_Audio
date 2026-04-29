@@ -10,9 +10,11 @@ public class ChangeTrackInfoDto
 
     public IFormFile? TrackFile { get; set; }
     
-    public string? PaceName { get; set; }
+    public short PaceId { get; set; }
 
-    public string? MoodName { get; set; }
+    public short MoodId { get; set; }
+    
+    public string GenresIdList { get; set; }
 
     public bool? IsTextless { get; set; }
 

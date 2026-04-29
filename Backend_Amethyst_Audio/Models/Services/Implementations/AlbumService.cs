@@ -29,7 +29,9 @@ public class AlbumService : IAlbumService
     public async Task<AlbumInfoDto> GetByIdAsync(long id)
     {
         _logger.LogDebug("[Debug] Fetching album with ID: {AlbumId}", id);
-        var album = await _db.Albums.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        var album = await _db.Albums
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id);
 
         if (album is null)
         {
@@ -39,25 +41,45 @@ public class AlbumService : IAlbumService
 
         _logger.LogDebug("[Debug] Successfully fetched album {AlbumId}", id);
         AlbumInfoDto resultDto = _mapper.Map<AlbumInfoDto>(album);
-        resultDto.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks.AsNoTracking()
-            .Where(x => x.IdAlbum == album.Id).Select(x => x.IdTrackNavigation).ToListAsync());
-        resultDto.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors.AsNoTracking()
-            .Where(x => x.IdAlbum == album.Id).Select(x => x.IdAuthorNavigation).ToListAsync());
+        resultDto.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks
+            .AsNoTracking()
+            .Include(x => x.IdTrackNavigation)
+            .ThenInclude(x => x.TracksAuthors)
+            .ThenInclude(x => x.IdAuthorNavigation)
+            .Where(x => x.IdAlbum == album.Id)
+            .Select(x => x.IdTrackNavigation)
+            .ToListAsync());
+        resultDto.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors
+            .AsNoTracking()
+            .Where(x => x.IdAlbum == album.Id)
+            .Select(x => x.IdAuthorNavigation)
+            .ToListAsync());
         return resultDto;
     }
 
     public async Task<List<AlbumInfoDto>> GetAllAsync()
     {
         _logger.LogDebug("[Debug] Fetching all albums");
-        var albums = await _db.Albums.AsNoTracking().ToListAsync();
+        var albums = await _db.Albums
+            .AsNoTracking()
+            .ToListAsync();
         _logger.LogInformation("[Info] Retrieved {Count} albums", albums.Count);
         List<AlbumInfoDto> resultDto = _mapper.Map<List<AlbumInfoDto>>(albums);
         foreach (var album in resultDto)
         {
-            album.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks.AsNoTracking()
-                .Where(x => x.IdAlbum == album.Id).Select(x => x.IdTrackNavigation).ToListAsync());
-            album.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors.AsNoTracking()
-                .Where(x => x.IdAlbum == album.Id).Select(x => x.IdAuthorNavigation).ToListAsync());
+            album.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks
+                .AsNoTracking()
+                .Include(x => x.IdTrackNavigation)
+                .ThenInclude(x => x.TracksAuthors)
+                .ThenInclude(x => x.IdAuthorNavigation)
+                .Where(x => x.IdAlbum == album.Id)
+                .Select(x => x.IdTrackNavigation)
+                .ToListAsync());
+            album.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors
+                .AsNoTracking()
+                .Where(x => x.IdAlbum == album.Id)
+                .Select(x => x.IdAuthorNavigation)
+                .ToListAsync());
         }
         return resultDto;
     }
@@ -96,7 +118,7 @@ public class AlbumService : IAlbumService
     
         var missingAuthors = authorIds.Except(existingAuthors);
         if (missingAuthors.Any())
-            throw new KeyNotFoundException($"Авторы не найдены: {string.Join(", ", missingAuthors)}");
+            throw new KeyNotFoundException($"Authors doesn't found: {string.Join(", ", missingAuthors)}");
 
         var existingTracks = await _db.Tracks
             .Where(t => trackIds.Contains(t.Id))
@@ -105,7 +127,7 @@ public class AlbumService : IAlbumService
     
         var missingTracks = trackIds.Except(existingTracks);
         if (missingTracks.Any())
-            throw new KeyNotFoundException($"Треки не найдены: {string.Join(", ", missingTracks)}");
+            throw new KeyNotFoundException($"Tracks doesn't found: {string.Join(", ", missingTracks)}");
 
         var albumEntity = _mapper.Map<Album>(dto);
         albumEntity.CoverFileName = coverFileName;
@@ -144,7 +166,7 @@ public class AlbumService : IAlbumService
     {
         var albumEntity = await _db.Albums
             .FirstOrDefaultAsync(a => a.Id == albumId)
-            ?? throw new KeyNotFoundException($"Альбом с ID {albumId} не найден");
+            ?? throw new KeyNotFoundException($"Album with ID {albumId} was not found");
 
         if (!string.IsNullOrWhiteSpace(dto.Name))
             albumEntity.Name = dto.Name;
@@ -175,7 +197,7 @@ public class AlbumService : IAlbumService
             
             var missingTracks = addedTrackIds.Except(existingTracks);
             if (missingTracks.Any())
-                throw new KeyNotFoundException($"Треки не найдены: {string.Join(", ", missingTracks)}");
+                throw new KeyNotFoundException($"Tracks doesn't found: {string.Join(", ", missingTracks)}");
 
             var existingAlbumTrackIds = await _db.AlbumsTracks
                 .Where(at => at.IdAlbum == albumEntity.Id)
@@ -295,7 +317,8 @@ public class AlbumService : IAlbumService
     public async Task<List<AlbumInfoDto>> GetListByAlbumNameAsync(string search)
     {
         _logger.LogDebug("[Debug] Searching albums with pattern: {SearchPattern}", search);
-        var albums = await _db.AlbumsAuthors.AsNoTracking()
+        var albums = await _db.AlbumsAuthors
+            .AsNoTracking()
             .Where(x => EF.Functions.Like(x.IdAlbumNavigation.Name, $"%{search}%"))
             .Select(x => x.IdAlbumNavigation)
             .Take(100)
@@ -308,7 +331,8 @@ public class AlbumService : IAlbumService
     public async Task<List<AlbumInfoDto>> GetListByUserIdAsync(long userId)
     {
         _logger.LogDebug("[Debug] Fetching albums for author {UserId}", userId);
-        var albums = await _db.AlbumsAuthors.AsNoTracking()
+        var albums = await _db.AlbumsAuthors
+            .AsNoTracking()
             .Where(x => x.IdAuthor == userId)
             .Select(x => x.IdAlbumNavigation)
             .Take(100)
@@ -318,10 +342,19 @@ public class AlbumService : IAlbumService
         List<AlbumInfoDto> resultDto = _mapper.Map<List<AlbumInfoDto>>(albums);
         foreach (var album in resultDto)
         {
-            album.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks.AsNoTracking()
-                .Where(x => x.IdAlbum == album.Id).Select(x => x.IdTrackNavigation).ToListAsync());
-            album.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors.AsNoTracking()
-                .Where(x => x.IdAlbum == album.Id).Select(x => x.IdAuthorNavigation).ToListAsync());
+            album.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks
+                .AsNoTracking()
+                .Include(x => x.IdTrackNavigation)
+                .ThenInclude(x => x.TracksAuthors)
+                .ThenInclude(x => x.IdAuthorNavigation)
+                .Where(x => x.IdAlbum == album.Id)
+                .Select(x => x.IdTrackNavigation)
+                .ToListAsync());
+            album.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors
+                .AsNoTracking()
+                .Where(x => x.IdAlbum == album.Id)
+                .Select(x => x.IdAuthorNavigation)
+                .ToListAsync());
         }
         return resultDto;
     }
@@ -329,7 +362,16 @@ public class AlbumService : IAlbumService
     public async Task<List<AlbumInfoDto>> GetListSavedAsync(long userId)
     {
         _logger.LogDebug("[Debug] Fetching saved albums for user {UserId}", userId);
-        var albums = await _db.SavedAlbums.AsNoTracking()
+        var albums = await _db.SavedAlbums
+            .AsNoTracking()
+            .Include(x => x.IdAlbumNavigation)
+            .ThenInclude(x => x.AlbumsAuthors)
+            .ThenInclude(x => x.IdAuthorNavigation)
+            .Include(x => x.IdAlbumNavigation)
+            .ThenInclude(x => x.AlbumsTracks)
+            .ThenInclude(x => x.IdTrackNavigation)
+            .ThenInclude(x => x.TracksAuthors)
+            .ThenInclude(x => x.IdAuthorNavigation)
             .Where(x => x.IdUser == userId)
             .Select(x => x.IdAlbumNavigation)
             .Take(100)
