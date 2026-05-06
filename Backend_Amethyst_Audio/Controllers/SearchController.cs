@@ -24,14 +24,14 @@ public class SearchController : ControllerBase
     }
 
     [HttpGet("genres")]
-    public async Task<IActionResult> GetGenres()
+    public async Task<IActionResult> GetGenresAsync()
     {
         GenreInfoDto dto = await _trackService.GetListGenresAsync();
         return Ok(dto);
     }
 
     [HttpGet("genres/{genreName}")]
-    public async Task<IActionResult> GetListByGenre(string genreName)
+    public async Task<IActionResult> GetListByGenreAsync(string genreName)
     {
         List<TrackInfoDto> tracks = await _trackService.GetListByGenreAsync(genreName);
         return Ok(tracks);
@@ -39,7 +39,7 @@ public class SearchController : ControllerBase
 
     [HttpGet("{searchLine}")]
     [Authorize]
-    public async Task<IActionResult> GetBySearch(string searchLine)
+    public async Task<IActionResult> GetBySearchAsync(string searchLine)
     {
         long userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         

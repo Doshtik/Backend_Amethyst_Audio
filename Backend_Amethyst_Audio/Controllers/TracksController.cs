@@ -22,7 +22,7 @@ public class TracksController : ControllerBase
 
     [HttpGet("{trackId}")]
     [Authorize]
-    public async Task<IActionResult> GetById(long trackId)
+    public async Task<IActionResult> GetByIdAsync(long trackId)
     {
         _logger.LogDebug("[Debug] Request to get track by ID: {TrackId}", trackId);
         try
@@ -45,7 +45,7 @@ public class TracksController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAllAsync()
     {
         _logger.LogDebug("[Debug] Request to get all tracks");
         try
@@ -81,7 +81,7 @@ public class TracksController : ControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateTrack([FromForm] CreateTrackDto dto)
+    public async Task<IActionResult> CreateTrackAsync([FromForm] CreateTrackDto dto)
     {
         _logger.LogDebug("[Debug] Request to create track. Title={Title}", dto.Name);
         try
@@ -89,7 +89,7 @@ public class TracksController : ControllerBase
             long userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var result = await _trackService.CreateAsync(dto, userId);
             _logger.LogInformation("[Info] Successfully created track {TrackId}", result.Id);
-            return CreatedAtAction(nameof(GetById), new { trackId = result.Id }, result);
+            return CreatedAtAction(nameof(GetByIdAsync), new { trackId = result.Id }, result);
         }
         catch (ArgumentException ex)
         {
@@ -110,7 +110,7 @@ public class TracksController : ControllerBase
 
     [HttpPut("{trackId}")]
     [Authorize]
-    public async Task<IActionResult> UpdateTrack(long trackId, [FromForm] ChangeTrackInfoDto dto)
+    public async Task<IActionResult> UpdateTrackAsync(long trackId, [FromForm] ChangeTrackInfoDto dto)
     {
         dto.Id = trackId;
         
@@ -140,7 +140,7 @@ public class TracksController : ControllerBase
 
     [HttpDelete("{trackId}")]
     [Authorize]
-    public async Task<IActionResult> DeleteTrack(long trackId)
+    public async Task<IActionResult> DeleteTrackAsync(long trackId)
     {
         _logger.LogDebug("[Debug] Request to delete track. TrackId={TrackId}", trackId);
         try

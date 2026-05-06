@@ -20,7 +20,7 @@ public class ReportsController : ControllerBase
     
     [HttpGet("{reportId}")]
     [Authorize]
-    public async Task<IActionResult> GetById(long reportId)
+    public async Task<IActionResult> GetByIdAsync(long reportId)
     {
         try
         {
@@ -35,7 +35,7 @@ public class ReportsController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> GetAll(string reportType)
+    public async Task<IActionResult> GetAllAsync()
     {
         try
         {
@@ -74,7 +74,7 @@ public class ReportsController : ControllerBase
     
     [HttpGet("answer/{reportAnswerId}")]
     [Authorize]
-    public async Task<IActionResult> GetAnswerById(long reportAnswerId)
+    public async Task<IActionResult> GetAnswerByIdAsync(long reportAnswerId)
     {
         try
         {
@@ -89,7 +89,7 @@ public class ReportsController : ControllerBase
 
     [HttpGet("answer")]
     [Authorize]
-    public async Task<IActionResult> GetAnswerAll()
+    public async Task<IActionResult> GetAnswerAllAsync()
     {
         try
         {
