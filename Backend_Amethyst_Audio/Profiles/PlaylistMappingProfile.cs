@@ -21,7 +21,7 @@ public class PlaylistMappingProfile : Profile
             .ForMember(dest => dest.CoverUrl, opt => opt.MapFrom(src =>
                 string.IsNullOrEmpty(src.CoverFileName) 
                     ? null 
-                    : $"{_baseUrl}/playlists/covers/{src.Id}"))
+                    : $"{_baseUrl}/api/media/playlists/covers/{src.Id}"))
             .ForMember(dest => dest.TrackList, opt => opt.MapFrom(src =>
                 src.PlaylistsTracks.Select(pt => pt.IdTrackNavigation)));
 

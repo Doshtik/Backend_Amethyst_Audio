@@ -22,7 +22,7 @@ public class AlbumMappingProfile : Profile
             .ForMember(dest => dest.CoverUrl, opt => opt.MapFrom(src =>
                 string.IsNullOrEmpty(src.CoverFileName) 
                     ? null 
-                    : $"{_baseUrl}/albums/covers/{src.Id}"))
+                    : $"{_baseUrl}/api/media/albums/covers/{src.Id}"))
             .ForMember(dest => dest.AuthorList, opt => opt.MapFrom(src => 
                 src.AlbumsAuthors
                     .Select(a => a.IdAuthorNavigation)

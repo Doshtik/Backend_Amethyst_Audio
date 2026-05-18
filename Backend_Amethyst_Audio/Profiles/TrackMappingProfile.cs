@@ -24,12 +24,12 @@ public class TrackMappingProfile : Profile
                 opt => opt.MapFrom(src => 
                     string.IsNullOrEmpty(src.CoverFileName) 
                         ? null 
-                        : $"{_baseUrl}/cover/{src.Id}"))
+                        : $"{_baseUrl}/api/media/tracks/cover/{src.Id}"))
             .ForMember(dest => dest.TrackUrl, 
                 opt => opt.MapFrom(src => 
                     string.IsNullOrEmpty(src.TrackFileName) 
                         ? null 
-                        : $"{_baseUrl}/audio/{src.Id}"));
+                        : $"{_baseUrl}/api/media/tracks/audio/{src.Id}"));
         
         CreateMap<ChangeTrackInfoDto, Track>()
             .ForMember(dest => dest.CoverFileName, opt => opt.Ignore())

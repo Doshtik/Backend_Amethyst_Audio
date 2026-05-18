@@ -16,12 +16,12 @@ public class UserMappingProfile : Profile
                 opt => opt.MapFrom(src => 
                     string.IsNullOrEmpty(src.AvatarFileName) 
                         ? null 
-                        : $"{_baseUrl}/users/avatars/{src.Id}"))
+                        : $"{_baseUrl}/api/media/users/avatars/{src.Id}"))
             .ForMember(dest => dest.HeaderUrl, 
                 opt => opt.MapFrom(src => 
                     string.IsNullOrEmpty(src.HeaderFileName) 
                         ? null 
-                        : $"{_baseUrl}/users/headers/{src.Id}"));
+                        : $"{_baseUrl}/api/media/users/headers/{src.Id}"));
 
         CreateMap<ChangeUserInfoDto, User>()
             .ForMember(dest => dest.AvatarFileName, opt => opt.Ignore())
