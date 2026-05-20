@@ -38,7 +38,7 @@ public class TokenService : ITokenService
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddDays(TOKEN_LIFETIME_DEYS), // token lifetime
+            expires: DateTime.UtcNow.AddDays(TOKEN_LIFETIME_DEYS), // token lifetime
             signingCredentials: creds
         );
 
