@@ -9,6 +9,9 @@ using Backend_Amethyst_Audio.Models.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
+// Create place where can store users media
+MediaService.InitDirectories();
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.AddConsole();

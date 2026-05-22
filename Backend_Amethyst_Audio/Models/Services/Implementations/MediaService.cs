@@ -11,12 +11,24 @@ public class MediaService: IMediaService
 {
     private readonly ILogger<MediaService> _logger;
     private readonly AppDbContext _db;
-    public string RootPath { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "AmethystAudio");
+    public static string RootPath { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "AmethystAudio");
 
     public MediaService(ILogger<MediaService> logger, AppDbContext db)
     {
         _logger = logger;
         _db = db;
+    }
+
+    public static void InitDirectories()
+    {
+        if (!Path.Exists(RootPath))
+        {
+            Directory.CreateDirectory(RootPath);
+            Directory.CreateDirectory(Path.Combine(RootPath, "Tracks"));
+            Directory.CreateDirectory(Path.Combine(RootPath, "Covers"));
+            Directory.CreateDirectory(Path.Combine(RootPath, "Avatars"));
+            Directory.CreateDirectory(Path.Combine(RootPath, "Headers"));
+        }
     }
 
     public async Task<string> SaveFileAsync(IFormFile file, FileTypes typeName)
@@ -47,9 +59,12 @@ public class MediaService: IMediaService
             var fileName = $"{Guid.NewGuid()}{extension}";
             var path = Path.Combine(RootPath, folderName, fileName);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
-            _logger.LogDebug("[Debug] Created directory if not exists. Path={Directory}", Path.GetDirectoryName(path));
-
+            if (!Path.Exists(path))
+            {
+                InitDirectories();
+                _logger.LogDebug("[Debug] Created directory if not exists. Path={Directory}", Path.GetDirectoryName(path));
+            }
+            
             await using FileStream stream = new FileStream(path, FileMode.Create);
             await file.CopyToAsync(stream);
 
