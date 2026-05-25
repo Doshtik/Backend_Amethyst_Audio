@@ -24,7 +24,7 @@ public class TrackMappingProfile : Profile
                 opt => opt.MapFrom(src => 
                     string.IsNullOrEmpty(src.CoverFileName) 
                         ? null 
-                        : $"{_baseUrl}/api/media/tracks/cover/{src.Id}"))
+                        : $"{_baseUrl}/api/media/tracks/covers/{src.Id}"))
             .ForMember(dest => dest.TrackUrl, 
                 opt => opt.MapFrom(src => 
                     string.IsNullOrEmpty(src.TrackFileName) 
