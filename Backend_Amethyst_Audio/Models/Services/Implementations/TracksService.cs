@@ -272,16 +272,20 @@ public class TracksService : ITrackService
     }
 
     //TODO: Обязательно переделать. Это очень плохо
-    public async Task<GenreInfoDto> GetListGenresAsync()
+    public async Task<List<GenreInfoDto>> GetListGenresAsync()
     {
-        List<string> genres = await _db.Genres
-            .Select(x => x.GenreName)
+        List<Genre> genres = await _db.Genres
             .ToListAsync();
-        GenreInfoDto dto = new GenreInfoDto()
+        List<GenreInfoDto> genresDto = new List<GenreInfoDto>();
+        foreach (Genre genre in genres)
         {
-            GenreName = genres,
-        };
-        return dto;
+            genresDto.Add(new GenreInfoDto()
+            {
+                Id = genre.Id,
+                GenreName = genre.GenreName
+            });
+        }
+        return genresDto;
     }
 
     public async Task<List<TrackInfoDto>> GetListByGenreAsync(string genre)

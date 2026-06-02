@@ -26,7 +26,7 @@ public class SearchController : ControllerBase
     [HttpGet("genres")]
     public async Task<IActionResult> GetGenresAsync()
     {
-        GenreInfoDto dto = await _trackService.GetListGenresAsync();
+        List<GenreInfoDto> dto = await _trackService.GetListGenresAsync();
         return Ok(dto);
     }
 

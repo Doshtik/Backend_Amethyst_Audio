@@ -21,7 +21,7 @@ public interface ITrackService
      */
     
     // Search & Filters
-    Task<GenreInfoDto> GetListGenresAsync();
+    Task<List<GenreInfoDto>> GetListGenresAsync();
     Task<List<TrackInfoDto>> GetListByGenreAsync(string genre);
     Task<List<TrackInfoDto>> GetListByTrackNameAsync(string trackName);
     Task<List<TrackInfoDto>> GetUserLibraryAsync(long userId);
