@@ -396,9 +396,11 @@ public class PlaylistService : IPlaylistService
             trackId, playlistId);
     }
 
-    public Task<bool> IsPlaylistSavedAsync(long userId, long playlistId)
+    public async Task<bool> IsPlaylistSavedAsync(long userId, long playlistId)
     {
-        return _playlistServiceImplementation.IsPlaylistSavedAsync(userId, playlistId);
+        bool isPlaylistSaved = await _db.SavedPlaylists.AsNoTracking()
+            .AnyAsync(p => p.IdUser == userId && p.IdPlaylist == playlistId);
+        return isPlaylistSaved;
     }
 
     public async Task SavePlaylistAsync(long userId, long playlistId)

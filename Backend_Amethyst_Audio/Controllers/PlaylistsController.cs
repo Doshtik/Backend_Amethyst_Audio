@@ -224,7 +224,7 @@ public class PlaylistsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> IsPlaylistSavedAsync(long id)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        var userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         bool result = await _playlistService.IsPlaylistSavedAsync(userId, id);
         return Ok(result);
     }

@@ -383,12 +383,11 @@ public class AlbumService : IAlbumService
 
     public async Task<bool> IsAlbumSavedAsync(long userId, long albumId)
     {
-        var existing = await _db.SavedAlbums.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.IdAlbum == albumId && x.IdUser == userId);
+        bool isAlbumSaved = await _db.SavedAlbums
+            .AsNoTracking()
+            .AnyAsync(x => x.IdAlbum == albumId && x.IdUser == userId);
 
-        if (existing is not null)
-            return false;
-        return true;
+        return isAlbumSaved;
     }
 
     public async Task SaveAlbumAsync(long idUser, long idAlbum)

@@ -149,7 +149,7 @@ public class AlbumsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> IsAlbumSavedAsync(long id)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        var userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         bool result = await _albumService.IsAlbumSavedAsync(userId, id);
         return Ok(result);
     }
