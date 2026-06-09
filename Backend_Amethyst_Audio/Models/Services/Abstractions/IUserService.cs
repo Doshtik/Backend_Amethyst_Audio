@@ -23,6 +23,7 @@ public interface IUserService
     
     Task<int> GetSubscriberAmountAsync(long id);
     
+    Task<bool> IsUserFollowedAsync(long userId, long targetUserId);
     Task FollowAsync(FollowUserDto dto);
     Task UnfollowAsync(FollowUserDto dto);
 }

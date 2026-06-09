@@ -392,6 +392,17 @@ public class UserService : IUserService
         return count;
     }
 
+    public async Task<bool> IsUserFollowedAsync(long userId, long targetUserId)
+    {
+        var sub = await _db.UsersSubs.FirstOrDefaultAsync(x => 
+            x.IdUser == targetUserId && 
+            x.IdSubscriber == userId);
+        
+        if (sub is not null)
+            return true;
+        return false;
+    }
+
     public async Task FollowAsync(FollowUserDto dto)
     {
         _logger.LogInformation("[Info] Follow attempt. SubscriberId={SubscriberId} → TargetUserId={TargetUserId}", 

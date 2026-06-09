@@ -321,6 +321,32 @@ public class ProfilesController : ControllerBase
         return Ok(list);
     }
     
+    [HttpGet("subscription/{targetUserId}")]
+    [Authorize]
+    public async Task<IActionResult> IsUserFollowedAsync(long targetUserId)
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var currentUserId))
+        {
+            _logger.LogWarning("[Warn] Follow attempt with invalid or missing user claim");
+            return Unauthorized(new { error = "Authentication required" });
+        }
+        
+        try
+        {
+            bool result = await _userService.IsUserFollowedAsync(currentUserId, targetUserId);
+            
+            return Ok(result);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Error] Failed to check following. SubscriberId={currentUserId}, TargetUserId={targetUserId}", 
+                currentUserId, targetUserId);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+    
     [HttpPost("subscription")]
     [Authorize]
     public async Task<IActionResult> FollowUserAsync([FromBody] FollowUserDto dto)
