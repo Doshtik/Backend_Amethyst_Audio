@@ -18,6 +18,7 @@ public interface IAlbumService
     Task<List<AlbumInfoDto>> GetListByUserIdAsync(long userId);
     Task<List<AlbumInfoDto>> GetListSavedAsync(long userId);
     
+    Task<bool> IsAlbumSavedAsync(long userId, long albumId);
     Task SaveAlbumAsync(long idUser, long idAlbum);
     Task UnsaveAlbumAsync(long idUser, long idAlbum);
 }

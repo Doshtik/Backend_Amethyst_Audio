@@ -16,7 +16,8 @@ public class PlaylistService : IPlaylistService
     private readonly IMediaService _mediaService;
     private readonly IMapper _mapper;
     private readonly ILogger<PlaylistService> _logger;
-    
+    private IPlaylistService _playlistServiceImplementation;
+
     public PlaylistService(AppDbContext db, IMediaService mediaService, IMapper mapper, ILogger<PlaylistService> logger)
     {
         _db = db;
@@ -393,6 +394,11 @@ public class PlaylistService : IPlaylistService
         
         _logger.LogInformation("[Info] Track removed from playlist. TrackId={TrackId}, PlaylistId={PlaylistId}", 
             trackId, playlistId);
+    }
+
+    public Task<bool> IsPlaylistSavedAsync(long userId, long playlistId)
+    {
+        return _playlistServiceImplementation.IsPlaylistSavedAsync(userId, playlistId);
     }
 
     public async Task SavePlaylistAsync(long userId, long playlistId)

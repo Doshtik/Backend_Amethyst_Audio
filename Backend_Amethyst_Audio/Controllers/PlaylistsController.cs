@@ -219,6 +219,15 @@ public class PlaylistsController : ControllerBase
             return StatusCode(500, new { error = "Internal server error" });
         }
     }
+    
+    [HttpGet("{id}/save")]
+    [Authorize]
+    public async Task<IActionResult> IsPlaylistSavedAsync(long id)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        bool result = await _playlistService.IsPlaylistSavedAsync(userId, id);
+        return Ok(result);
+    }
 
     [HttpPost("{id}/save")]
     [Authorize]

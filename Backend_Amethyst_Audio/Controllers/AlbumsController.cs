@@ -65,7 +65,7 @@ public class AlbumsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetListByUserIdAsync(long userId)
     {
-        var currentUserId = long.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
+        var currentUserId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         
         try
         {
@@ -89,7 +89,7 @@ public class AlbumsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> CreateAsync([FromForm] CreateAlbumDto dto)
     {
-        var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         _logger.LogDebug("[Debug] Request to create a new album. DTO: {@Dto}", dto);
         try
         {
@@ -144,12 +144,21 @@ public class AlbumsController : ControllerBase
             return Problem(statusCode: 500, title: "Internal Server Error", detail: ex.Message);
         }
     }
-
+    
+    [HttpGet("{id}/save")]
+    [Authorize]
+    public async Task<IActionResult> IsAlbumSavedAsync(long id)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        bool result = await _albumService.IsAlbumSavedAsync(userId, id);
+        return Ok(result);
+    }
+    
     [HttpPost("{id}/save")]
     [Authorize]
     public async Task<IActionResult> SaveAlbumAsync(long id)
     {
-        var userId = int.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         _logger.LogDebug("[Debug] Request to save album {AlbumId} for user {UserId}", id, userId);
         try
         {
@@ -173,7 +182,7 @@ public class AlbumsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UnsaveAlbumAsync(long id)
     {
-        var userId = int.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier));
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         _logger.LogDebug("[Debug] Request to unsave album {AlbumId} for user {UserId}", id, userId);
         try
         {

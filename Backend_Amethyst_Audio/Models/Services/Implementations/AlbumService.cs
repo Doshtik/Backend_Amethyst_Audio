@@ -381,6 +381,16 @@ public class AlbumService : IAlbumService
         return _mapper.Map<List<AlbumInfoDto>>(albums);
     }
 
+    public async Task<bool> IsAlbumSavedAsync(long userId, long albumId)
+    {
+        var existing = await _db.SavedAlbums.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.IdAlbum == albumId && x.IdUser == userId);
+
+        if (existing is not null)
+            return false;
+        return true;
+    }
+
     public async Task SaveAlbumAsync(long idUser, long idAlbum)
     {
         _logger.LogDebug("[Debug] Attempting to save album {AlbumId} for user {UserId}", idAlbum, idUser);

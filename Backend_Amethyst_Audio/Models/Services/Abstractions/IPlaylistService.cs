@@ -20,6 +20,7 @@ public interface IPlaylistService
     Task AddInPlaylistAsync(long trackId, long playlistId);
     Task RemoveFromPlaylistAsync(long trackId, long playlistId);
     
+    Task<bool> IsPlaylistSavedAsync(long userId, long playlistId);
     Task SavePlaylistAsync(long userId, long playlistId);
     Task UnsavePlaylistAsync(long userId, long playlistId);
 }
