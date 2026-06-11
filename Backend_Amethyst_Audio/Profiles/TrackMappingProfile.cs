@@ -16,10 +16,23 @@ public class TrackMappingProfile : Profile
             .ForMember(dest => dest.IdPace, opt => opt.Ignore())
             .ForMember(dest => dest.IdMood, opt => opt.Ignore());
         
+        CreateMap<Genre, GenreInfoDto>();
+        
         CreateMap<Track, TrackInfoDto>()
             .ForMember(dest => dest.UserList,
                 opt => opt.MapFrom(src => 
                     src.TracksAuthors.Select(ta => ta.IdAuthorNavigation)))
+            .ForMember(dest => dest.GenreList, opt => opt.MapFrom(src => 
+                src.TracksGenres != null 
+                    ? src.TracksGenres.Select(tg => tg.IdGenreNavigation).ToList() // Извлекаем Genre из промежуточной таблицы
+                    : new List<Genre>()
+            ))
+            .ForMember(dest => dest.PaceName, 
+                opt => opt.MapFrom(src => src.IdPaceNavigation != null ? src.IdPaceNavigation.PaceName : null))
+            .ForMember(dest => dest.MoodName, 
+                opt => opt.MapFrom(src => src.IdMoodNavigation != null ? src.IdMoodNavigation.MoodName : null))
+            .ForMember(dest => dest.IsTextless, 
+                opt => opt.MapFrom(src => src.IsTextless)) 
             .ForMember(dest => dest.CoverUrl, 
                 opt => opt.MapFrom(src => 
                     string.IsNullOrEmpty(src.CoverFileName) 

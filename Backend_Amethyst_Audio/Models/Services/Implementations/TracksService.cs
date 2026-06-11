@@ -138,6 +138,8 @@ public class TracksService : ITrackService
             .AsNoTracking()
             .Include(t => t.TracksAuthors)
             .ThenInclude(ta => ta.IdAuthorNavigation)
+            .Include(t => t.TracksGenres)
+            .ThenInclude(tg => tg.IdGenreNavigation)
             .FirstOrDefaultAsync(t => t.Id == track.Id);
         
         return _mapper.Map<TrackInfoDto>(createdTrack);
