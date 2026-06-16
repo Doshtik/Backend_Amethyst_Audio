@@ -311,21 +311,55 @@ public class AlbumService : IAlbumService
             .ToListAsync();
             
         _logger.LogInformation("[Info] Retrieved {Count} newest albums", albums.Count);
-        return _mapper.Map<List<AlbumInfoDto>>(albums);
+        List<AlbumInfoDto> resultDto = _mapper.Map<List<AlbumInfoDto>>(albums);
+        foreach (var album in resultDto)
+        {
+            album.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks
+                .AsNoTracking()
+                .Include(x => x.IdTrackNavigation)
+                .ThenInclude(x => x.TracksAuthors)
+                .ThenInclude(x => x.IdAuthorNavigation)
+                .Where(x => x.IdAlbum == album.Id)
+                .Select(x => x.IdTrackNavigation)
+                .ToListAsync());
+            album.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors
+                .AsNoTracking()
+                .Where(x => x.IdAlbum == album.Id)
+                .Select(x => x.IdAuthorNavigation)
+                .ToListAsync());
+        }
+        return resultDto;
     }
 
     public async Task<List<AlbumInfoDto>> GetListByAlbumNameAsync(string search)
     {
         _logger.LogDebug("[Debug] Searching albums with pattern: {SearchPattern}", search);
-        var albums = await _db.AlbumsAuthors
+        List<Album> albums = await _db.AlbumsAuthors
             .AsNoTracking()
-            .Where(x => EF.Functions.Like(x.IdAlbumNavigation.Name, $"%{search}%"))
+            .Where(x => EF.Functions.ILike(x.IdAlbumNavigation.Name, $"%{search}%"))
             .Select(x => x.IdAlbumNavigation)
             .Take(100)
             .ToListAsync();
             
         _logger.LogInformation("[Info] Found {Count} albums matching search '{SearchPattern}'", albums.Count, search);
-        return _mapper.Map<List<AlbumInfoDto>>(albums);
+        List<AlbumInfoDto> resultDto = _mapper.Map<List<AlbumInfoDto>>(albums);
+        foreach (var album in resultDto)
+        {
+            album.TrackList = _mapper.Map<List<TrackInfoDto>>(await _db.AlbumsTracks
+                .AsNoTracking()
+                .Include(x => x.IdTrackNavigation)
+                .ThenInclude(x => x.TracksAuthors)
+                .ThenInclude(x => x.IdAuthorNavigation)
+                .Where(x => x.IdAlbum == album.Id)
+                .Select(x => x.IdTrackNavigation)
+                .ToListAsync());
+            album.AuthorList = _mapper.Map<List<UserInfoDto>>(await _db.AlbumsAuthors
+                .AsNoTracking()
+                .Where(x => x.IdAlbum == album.Id)
+                .Select(x => x.IdAuthorNavigation)
+                .ToListAsync());
+        }
+        return resultDto;
     }
 
     public async Task<List<AlbumInfoDto>> GetListByUserIdAsync(long userId)

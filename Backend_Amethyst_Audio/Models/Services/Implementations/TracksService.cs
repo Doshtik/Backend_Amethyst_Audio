@@ -325,7 +325,9 @@ public class TracksService : ITrackService
         // Поиск с частичным совпадением (case-insensitive)
         var tracks = await _db.Tracks
             .AsNoTracking()
-            .Where(x => EF.Functions.Like(x.Name, $"%{trackName}%"))
+            .Include(p => p.TracksAuthors)
+            .ThenInclude(ta => ta.IdAuthorNavigation)
+            .Where(x => EF.Functions.ILike(x.Name, $"%{trackName}%"))
             .Take(100)
             .ToListAsync();
         
@@ -473,13 +475,13 @@ public class TracksService : ITrackService
             recommendationsDto.MoodId, recommendationsDto.PaceId, userId ?? "anonymous");
         
         // Config validation
-        if (await _db.Moods.FirstOrDefaultAsync(x => x.Id == recommendationsDto.MoodId) is not null)
+        if (await _db.Moods.FirstOrDefaultAsync(x => x.Id == recommendationsDto.MoodId) is null)
         {
             _logger.LogWarning("[Warn] Invalid mood filter. Mood={Mood}", recommendationsDto.MoodId);
             throw new ArgumentException($"Invalid mood: {recommendationsDto.MoodId}");
         }
         
-        if (await _db.Paces.FirstOrDefaultAsync(x => x.Id == recommendationsDto.PaceId) is not null)
+        if (await _db.Paces.FirstOrDefaultAsync(x => x.Id == recommendationsDto.PaceId) is null)
         {
             _logger.LogWarning("[Warn] Invalid pace filter. Pace={Pace}", recommendationsDto.PaceId);
             throw new ArgumentException($"Invalid pace: {recommendationsDto.PaceId}");

@@ -49,7 +49,7 @@ public class RecommendationController : ControllerBase
     /// Get personalized track recommendations based on user preferences
     /// GET /api/Recommendation/query
     /// </summary>
-    [HttpGet("query")]
+    [HttpPost("query")]
     [Authorize]
     public async Task<IActionResult> GetPersonalizedRecommendationsAsync([FromBody] PageResonanceDto recommendationsDto)
     {

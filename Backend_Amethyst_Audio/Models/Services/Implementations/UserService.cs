@@ -377,7 +377,7 @@ public class UserService : IUserService
         _logger.LogDebug("[Debug] Get user list by nickname. Nickname={Nickname}", nickname);
         
         List<User> users = await _db.Users
-            .Where(x => EF.Functions.Like(x.Nickname, $"%{nickname}%"))
+            .Where(x => EF.Functions.ILike(x.Nickname, $"%{nickname}%"))
             .ToListAsync();
         
         return _mapper.Map<List<UserInfoDto>>(users);

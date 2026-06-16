@@ -92,7 +92,7 @@ public class PlaylistService : IPlaylistService
         }
         
         string coverFileName;
-        if (dto.CoverFile != null)
+        if (dto.CoverFile is not null)
         {
             try
             {
@@ -296,7 +296,7 @@ public class PlaylistService : IPlaylistService
         List<Playlist> playlists = await _db.Playlists
             .AsNoTracking()
             .Where(x => 
-                EF.Functions.Like(x.Name, $"%{query}%") &&
+                EF.Functions.ILike(x.Name, $"%{query}%") &&
                 x.IsPublic &&
                 x.IdUser != excludeUserId)
             .OrderByDescending(x => x.CreatedAt)
