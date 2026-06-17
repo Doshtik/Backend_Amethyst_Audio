@@ -244,14 +244,20 @@ public class UserService : IUserService
             }
         }
         
-        string avatarFileName, headerFileName;
+        string avatarFileName = "default-avatar.jpg", headerFileName="default-header.jpg";
         try
         {
-            _logger.LogDebug("[Debug] Saving user avatar file...");
-            avatarFileName = await _mediaService.SaveFileAsync(dto.AvatarFile, FileTypes.Avatars);
-
-            _logger.LogDebug("[Debug] Saving user header file...");
-            headerFileName = await _mediaService.SaveFileAsync(dto.HeaderFile, FileTypes.Headers);
+            if (dto.AvatarFile is not null) 
+            {
+                _logger.LogDebug("[Debug] Saving user avatar file...");
+                avatarFileName = await _mediaService.SaveFileAsync(dto.AvatarFile, FileTypes.Avatars);
+            }
+            
+            if (dto.HeaderFile is not null) 
+            {
+                _logger.LogDebug("[Debug] Saving user header file..."); 
+                headerFileName = await _mediaService.SaveFileAsync(dto.HeaderFile, FileTypes.Headers);
+            }
         }
         catch (Exception ex)
         {

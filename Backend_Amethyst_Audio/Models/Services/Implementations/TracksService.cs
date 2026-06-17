@@ -71,7 +71,8 @@ public class TracksService : ITrackService
     public async Task<TrackInfoDto> CreateAsync(CreateTrackDto dto, long userId)
     {
         List<long> authorIdList = JsonSerializer.Deserialize<List<long>>(dto.AuthorsIdList) ?? new List<long>();
-        authorIdList.Add(userId);
+        if (!authorIdList.Contains(userId))
+            authorIdList.Add(userId);
         _logger.LogInformation("[Info] Creating new track. Title={Title}, AuthorsCount={AuthorsCount}", dto.Name, authorIdList?.Count ?? 0);
 
         string trackFileName, coverFileName;
