@@ -107,7 +107,7 @@ public class TracksController : ControllerBase
             long userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var result = await _trackService.CreateAsync(dto, userId);
             _logger.LogInformation("[Info] Successfully created track {TrackId}", result.Id);
-            return CreatedAtAction(nameof(GetByIdAsync), new { trackId = result.Id }, result);
+            return StatusCode(StatusCodes.Status201Created, result);
         }
         catch (ArgumentException ex)
         {

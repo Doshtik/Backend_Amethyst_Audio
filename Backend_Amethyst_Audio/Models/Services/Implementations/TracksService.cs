@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ATL;
 using AutoMapper;
 using Backend_Amethyst_Audio.DTO;
 using Backend_Amethyst_Audio.DTO.Pages;
@@ -10,6 +11,7 @@ using Backend_Amethyst_Audio.Services.Abstractions;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Track = Backend_Amethyst_Audio.Models.Entities.Track;
 
 namespace Backend_Amethyst_Audio.Services.Implementations;
 
@@ -100,6 +102,11 @@ public class TracksService : ITrackService
         
         track.TrackFileName = trackFileName;
         track.CoverFileName = coverFileName;
+
+        var stream = dto.TrackFile.OpenReadStream();
+        stream.Position = 0;
+        var audioTrack = new ATL.Track(stream);
+        track.DurationSec = (int)Math.Round(audioTrack.DurationMs / 1000.0);
         
         foreach (long usersId in authorIdList)
         {
